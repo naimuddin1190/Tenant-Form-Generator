@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র — ফর্ম তৈরি করুন</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF8F1;
+    --paper-edge:#EDE7D6;
+    --ink:#22261F;
+    --ink-soft:#565B4E;
+    --green:#1F6B45;
+    --green-dark:#134A2E;
+    --maroon:#8C2F39;
+    --line:#C9C2AA;
+    --panel:#F3F0E7;
+    --panel-border:#DAD3BC;
+    --accent-bg:#EFEAD9;
+    --focus:#1F6B45;
+    --danger:#8C2F39;
+    --whatsapp:#25D366;
+    --whatsapp-dark:#128C4A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--accent-bg);
+    color:var(--ink);
+    font-family:'Noto Sans Bengali','Noto Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    background:var(--green-dark);
+    color:#F3F0E7;
+    padding:16px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .topbar h1{
+    font-family:'Tiro Bangla',serif;
+    font-size:21px;
+    margin:0;
+    font-weight:400;
+    letter-spacing:.2px;
+  }
+  .topbar p{margin:2px 0 0;font-size:12.5px;color:#CFE3D5;}
+  .btn{
+    border:none;
+    border-radius:3px;
+    padding:9px 15px;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:#E7C567;color:var(--green-dark);}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-ghost{background:transparent;color:#F3F0E7;border:1px solid #4C6E58;}
+  .btn-ghost:hover{background:#245537;}
+  .btn-whatsapp{background:var(--whatsapp);color:#fff;}
+  .btn-whatsapp:hover{background:var(--whatsapp-dark);}
+  .btn-outline{background:#fff;color:var(--green-dark);border:1px solid var(--panel-border);}
+  .btn-outline:hover{background:var(--panel);}
+  .btn-danger-outline{background:#fff;color:var(--danger);border:1px solid #E0BFC3;}
+  .btn-danger-outline:hover{background:#FBEEEF;}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+  .btnbar{display:flex;gap:8px;flex-wrap:wrap;}
+  .badge{
+    background:#E7C567;color:var(--green-dark);border-radius:999px;
+    font-size:11px;font-weight:700;padding:1px 7px;margin-left:4px;
+  }
+
+  .layout{padding:0;}
+
+  /* ---------- FORM PANEL (full width, single column) ---------- */
+  .form-panel{
+    max-width:760px;
+    margin:0 auto;
+    padding:24px 20px 90px;
+  }
+  fieldset{
+    border:1px solid var(--panel-border);
+    border-radius:4px;
+    margin:0 0 16px;
+    padding:14px 14px 16px;
+    background:#FCFAF3;
+  }
+  legend{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--green-dark);
+    padding:0 6px;
+    letter-spacing:.2px;
+  }
+  .field{margin-bottom:10px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:3px;
+  }
+  .field input[type=text],
+  .field input[type=date],
+  .field input[type=tel],
+  .field input[type=email],
+  .field textarea,
+  .field select{
+    width:100%;
+    padding:9px 10px;
+    font-family:inherit;
+    font-size:14px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field textarea{resize:vertical;min-height:44px;}
+  .field input:focus,.field textarea:focus,.field select:focus{
+    outline:2px solid var(--focus);
+    outline-offset:1px;
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:520px){.row2{grid-template-columns:1fr;}}
+
+  .photo-drop{
+    border:1.5px dashed var(--line);
+    border-radius:4px;
+    padding:12px;
+    text-align:center;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    background:#fff;
+    cursor:pointer;
+  }
+  .photo-drop img{max-height:90px;display:block;margin:0 auto 6px;}
+
+  .fam-row{
+    display:grid;
+    grid-template-columns:1fr 70px 1fr 1fr 30px;
+    gap:6px;
+    margin-bottom:6px;
+    align-items:center;
+  }
+  .fam-row input{padding:7px 8px;font-size:13px;border:1px solid var(--line);border-radius:3px;}
+  @media (max-width:520px){.fam-row{grid-template-columns:1fr 1fr;}}
+  .fam-remove{
+    background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;
+  }
+  .add-row-btn{
+    background:none;
+    border:1px dashed var(--green);
+    color:var(--green-dark);
+    border-radius:3px;
+    padding:6px 10px;
+    font-size:12.5px;
+    cursor:pointer;
+    margin-top:2px;
+  }
+
+  .float-actions{
+    max-width:760px;margin:0 auto 18px;padding:0 20px;
+    display:flex;gap:10px;flex-wrap:wrap;
+  }
+
+  /* ---------- MODAL / OVERLAY shared ---------- */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(20,22,17,.55);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    overflow-y:auto;
+    padding:26px 14px 60px;
+    z-index:100;
+  }
+  body.preview-open #previewOverlay{display:flex;}
+  body.saved-open #savedOverlay{display:flex;}
+  .overlay-inner{
+    width:100%;
+    max-width:840px;
+  }
+  .overlay-toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:10px;flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .overlay-toolbar .btnbar{flex-wrap:wrap;}
+  .close-x{
+    background:#fff;border:1px solid var(--panel-border);color:var(--ink);
+    border-radius:3px;padding:8px 14px;font-weight:600;font-size:13.5px;cursor:pointer;
+  }
+
+  /* ---------- PAPER / DOCUMENT ---------- */
+  .paper{
+    width:100%;
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    box-shadow:0 6px 24px rgba(34,38,31,.18);
+    padding:34px 38px 30px;
+    font-family:'Noto Sans Bengali','Noto Sans',sans-serif;
+    color:var(--ink);
+  }
+  .doc-head{
+    display:grid;
+    grid-template-columns:150px 1fr 190px;
+    gap:14px;
+    align-items:start;
+    margin-bottom:6px;
+  }
+  @media (max-width:600px){
+    .doc-head{grid-template-columns:1fr;}
+  }
+  .photo-box{
+    width:150px;height:150px;
+    border:1px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--ink-soft);
+    text-align:center;
+    overflow:hidden;
+  }
+  .photo-box img{width:100%;height:100%;object-fit:cover;}
+  .seal{text-align:center;}
+  .seal svg{width:72px;height:72px;}
+  .doc-title{
+    font-family:'Tiro Bangla',serif;
+    text-align:center;
+    font-size:26px;
+    margin:6px 0 14px;
+    color:var(--ink);
+  }
+  .addr-box{
+    border:1px solid var(--ink);
+    padding:8px 10px;
+    font-size:12.5px;
+    line-height:2.05;
+  }
+  .addr-box .al{border-bottom:1px dotted var(--ink-soft);display:inline-block;min-width:60%;}
+
+  .doc-body{font-size:13.5px;line-height:1.9;}
+  .qline{display:flex;gap:8px;margin:6px 0;}
+  .qnum{flex:0 0 22px;font-weight:600;}
+  .qtext{flex:1;}
+  .val{
+    border-bottom:1px dotted var(--ink-soft);
+    padding:0 2px 1px;
+    display:inline-block;
+    min-width:40px;
+  }
+  .val.empty{color:transparent;min-width:80px;}
+  .val.filled{color:var(--ink);font-weight:500;}
+  .split{display:flex;flex-wrap:wrap;gap:4px 18px;}
+
+  table.fam-table{
+    width:100%;
+    border-collapse:collapse;
+    margin:8px 0 4px;
+    font-size:12.5px;
+  }
+  table.fam-table th,table.fam-table td{
+    border:1px solid var(--ink);
+    padding:5px 8px;
+    text-align:left;
+  }
+  table.fam-table th{background:var(--panel);}
+
+  .sign-row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+    font-size:12.5px;
+  }
+  .sign-line{border-top:1px dotted var(--ink-soft);width:200px;text-align:center;padding-top:4px;}
+
+  .notes{
+    margin-top:18px;
+    font-size:11px;
+    color:var(--ink-soft);
+    line-height:1.7;
+  }
+
+  /* ---------- Saved forms list ---------- */
+  .saved-card{
+    background:#fff;border:1px solid var(--panel-border);border-radius:5px;
+    padding:14px 16px;margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .saved-card .info b{font-size:14.5px;}
+  .saved-card .info div{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .empty-state{
+    background:#fff;border:1px dashed var(--panel-border);border-radius:5px;
+    padding:30px;text-align:center;color:var(--ink-soft);font-size:13.5px;
+  }
+  .draft-note{
+    font-size:12px;color:var(--green-dark);background:#E4F1E8;border:1px solid #C6DFCE;
+    padding:8px 12px;border-radius:4px;margin-bottom:14px;
+  }
+
+  @media print{
+    body{background:#fff;}
+    .topbar,.form-panel,.float-actions,.overlay-toolbar,.close-x,#savedOverlay{display:none !important;}
+    #previewOverlay{
+      display:block !important;position:static;background:none;padding:0;inset:auto;
+    }
+    .overlay-inner{max-width:100%;}
+    .paper{box-shadow:none;border:none;padding:14mm 16mm;}
+    @page{size:A4;margin:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র — ফর্ম বিল্ডার</h1>
+    <p>নিচের ফর্মে তথ্য দিন, তারপর প্রিভিউ দেখুন বা সরাসরি প্রিন্ট/পাঠান।</p>
+  </div>
+  <div class="btnbar">
+    <button class="btn btn-primary" id="previewBtn" type="button">👁 প্রিভিউ দেখুন</button>
+    <button class="btn btn-ghost" id="savedListBtn" type="button">সংরক্ষিত ফর্ম<span class="badge" id="savedCount">0</span></button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="float-actions">
+    <button class="btn btn-outline" id="saveFormBtn" type="button">💾 এই ফর্ম সংরক্ষণ করুন</button>
+    <button class="btn btn-danger-outline" id="resetBtn" type="button">রিসেট</button>
+  </div>
+
+  <!-- ===================== FORM PANEL ===================== -->
+  <div class="form-panel">
+    <form id="theForm">
+
+      <fieldset>
+        <legend>ছবি ও ঠিকানা (উপরের বক্স)</legend>
+        <div class="field">
+          <label>পাসপোর্ট সাইজ ছবি</label>
+          <div class="photo-drop" id="photoDrop">
+            <span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display:none;">
+        </div>
+        <div class="field"><label>ফ্ল্যাট/তলা</label><input type="text" data-key="flat"></div>
+        <div class="field"><label>বাড়ী/হোল্ডিং</label><input type="text" data-key="holding"></div>
+        <div class="field"><label>রাস্তা</label><input type="text" data-key="road"></div>
+        <div class="field"><label>এলাকা</label><input type="text" data-key="area"></div>
+        <div class="row2">
+          <div class="field"><label>পোস্ট কোড</label><input type="text" data-key="postcode"></div>
+          <div class="field"><label>থানা</label><input type="text" data-key="thana"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>১–৯। ব্যক্তিগত তথ্য</legend>
+        <div class="field"><label>নাম (মালিক/ভাড়াটিয়া)</label><input type="text" data-key="name"></div>
+        <div class="field"><label>পিতার নাম</label><input type="text" data-key="fatherName"></div>
+        <div class="row2">
+          <div class="field"><label>জন্ম তারিখ</label><input type="date" data-key="dob"></div>
+          <div class="field"><label>বৈবাহিক অবস্থা</label>
+            <select data-key="marital">
+              <option value="">নির্বাচন করুন</option>
+              <option>অবিবাহিত</option>
+              <option>বিবাহিত</option>
+              <option>বিধবা/বিপত্নীক</option>
+              <option>তালাকপ্রাপ্ত</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>স্থায়ী ঠিকানা</label><textarea data-key="permAddr"></textarea></div>
+        <div class="field"><label>পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানা</label><textarea data-key="profession"></textarea></div>
+        <div class="row2">
+          <div class="field"><label>ধর্ম</label><input type="text" data-key="religion"></div>
+          <div class="field"><label>শিক্ষাগত যোগ্যতা</label><input type="text" data-key="education"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="mobile"></div>
+          <div class="field"><label>ই-মেইল আইডি</label><input type="email" data-key="email"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>জাতীয় পরিচয়পত্র নম্বর</label><input type="text" data-key="nid"></div>
+          <div class="field"><label>পাসপোর্ট নম্বর (যদি থাকে)</label><input type="text" data-key="passport"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>১০। জরুরী যোগাযোগ</legend>
+        <div class="row2">
+          <div class="field"><label>নাম</label><input type="text" data-key="ecName"></div>
+          <div class="field"><label>সম্পর্ক</label><input type="text" data-key="ecRelation"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>ঠিকানা</label><input type="text" data-key="ecAddr"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="ecMobile"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>১১। পরিবারের সদস্যদের বিবরণ</legend>
+        <div id="famRows"></div>
+        <button type="button" class="add-row-btn" id="addFamRow">+ সদস্য যোগ করুন</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>১২। গৃহকর্মীর তথ্য</legend>
+        <div class="row2">
+          <div class="field"><label>নাম</label><input type="text" data-key="maidName"></div>
+          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" data-key="maidNid"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>মোবাইল নং</label><input type="tel" data-key="maidMobile"></div>
+          <div class="field"><label>স্থায়ী ঠিকানা</label><input type="text" data-key="maidAddr"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>১৩। ড্রাইভারের তথ্য</legend>
+        <div class="row2">
+          <div class="field"><label>নাম</label><input type="text" data-key="driverName"></div>
+          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" data-key="driverNid"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>মোবাইল নং</label><input type="tel" data-key="driverMobile"></div>
+          <div class="field"><label>স্থায়ী ঠিকানা</label><input type="text" data-key="driverAddr"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>১৪–১৬। বাড়িওয়ালা সংক্রান্ত</legend>
+        <div class="row2">
+          <div class="field"><label>পূর্ববর্তী বাড়িওয়ালার নাম</label><input type="text" data-key="prevOwnerName"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="prevOwnerMobile"></div>
+        </div>
+        <div class="field"><label>ঠিকানা</label><input type="text" data-key="prevOwnerAddr"></div>
+        <div class="field"><label>পূর্ববর্তী বাসা ছাড়ার কারণ</label><input type="text" data-key="leaveReason"></div>
+        <div class="row2">
+          <div class="field"><label>বর্তমান বাড়িওয়ালার নাম</label><input type="text" data-key="currOwnerName"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="currOwnerMobile"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>তারিখ</legend>
+        <div class="field"><label>ফর্ম পূরণের তারিখ</label><input type="date" data-key="formDate"></div>
+      </fieldset>
+
+    </form>
+  </div>
+</div>
+
+<!-- ===================== PREVIEW OVERLAY ===================== -->
+<div class="overlay" id="previewOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-toolbar">
+      <div class="btnbar">
+        <button class="btn btn-primary" id="printBtn" type="button">🖨 প্রিন্ট / PDF সেভ</button>
+        <button class="btn btn-whatsapp" id="whatsappBtn" type="button">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+            <path d="M16.04 3C9.4 3 4 8.36 4 15c0 2.36.66 4.56 1.8 6.44L4 29l7.76-1.75A11.9 11.9 0 0 0 16.04 27C22.68 27 28 21.64 28 15S22.68 3 16.04 3Zm0 21.7c-1.98 0-3.83-.55-5.4-1.5l-.39-.23-4.6 1.04 1.03-4.48-.25-.4A9.6 9.6 0 0 1 6.3 15c0-5.35 4.4-9.7 9.74-9.7 5.35 0 9.7 4.35 9.7 9.7s-4.35 9.7-9.7 9.7Zm5.34-7.28c-.29-.15-1.74-.86-2.01-.96-.27-.1-.47-.15-.66.15-.2.29-.76.96-.93 1.15-.17.2-.34.22-.63.08-.29-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.2-.29.29-.49.1-.2.05-.37-.02-.51-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5-.17 0-.37-.02-.56-.02-.2 0-.51.07-.78.37-.27.29-1.02 1-1.02 2.44s1.05 2.83 1.19 3.03c.15.2 2.06 3.15 5 4.42.7.3 1.24.48 1.67.61.7.22 1.34.19 1.84.12.56-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.13-.27-.2-.56-.35Z"/>
+          </svg>
+          WhatsApp-এ পাঠান
+        </button>
+      </div>
+      <button class="close-x" id="closePreview" type="button">✕ বন্ধ করুন</button>
+    </div>
+
+    <div class="paper" id="paper">
+
+      <div class="doc-head">
+        <div class="photo-box" id="previewPhotoBox">এক কপি পাসপোর্ট<br>সাইজ ছবি</div>
+
+        <!--
+          ==== লোগো বসানোর জায়গা (SAMPLE) ====
+          নিচের <svg> ব্লকটা একটা প্লেসহোল্ডার সীল/লোগো।
+          নিজের লোগো বসাতে চাইলে পুরো <svg>...</svg> ব্লকটা মুছে
+          এভাবে একটা <img> ট্যাগ বসান:
+
+          <img src="your-logo.png" alt="লোগো"
+               style="width:72px;height:72px;object-fit:contain;">
+
+          (your-logo.png এর জায়গায় নিজের লোগোর ফাইল পাথ/লিংক দিন)
+        -->
+        <div class="seal">
+          <img src="/assests/logo.png" alt="লোগো"
+               style="width:72px;height:72px;object-fit:contain;">
+
+        </div>
+
+        <div class="addr-box" id="previewAddr">
+          ফ্ল্যাট/তলাঃ <span class="al" id="p_flat"></span><br>
+          বাড়ী/হোল্ডিংঃ <span class="al" id="p_holding"></span><br>
+          রাস্তাঃ <span class="al" id="p_road"></span><br>
+          এলাকাঃ <span class="al" id="p_area"></span><br>
+          পোস্ট কোডঃ <span class="al" id="p_postcode"></span><br>
+          থানাঃ <span class="al" id="p_thana"></span>
+        </div>
+      </div>
+
+      <div class="doc-title">অস্থায়ী ভাড়াটিয়া চুক্তিপত্র</div>
+
+      <div class="doc-body">
+        <div class="qline"><div class="qnum">১।</div><div class="qtext">নাম (মালিক/ভাড়াটিয়া): <span class="val" id="p_name"></span></div></div>
+        <div class="qline"><div class="qnum">২।</div><div class="qtext">পিতার নামঃ <span class="val" id="p_fatherName"></span></div></div>
+        <div class="qline"><div class="qnum">৩।</div><div class="qtext split">
+          <span>জন্ম তারিখঃ <span class="val" id="p_dob"></span></span>
+          <span>বৈবাহিক অবস্থাঃ <span class="val" id="p_marital"></span></span>
+        </div></div>
+        <div class="qline"><div class="qnum">৪।</div><div class="qtext">স্থায়ী ঠিকানাঃ <span class="val" id="p_permAddr"></span></div></div>
+        <div class="qline"><div class="qnum">৫।</div><div class="qtext">পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানাঃ <span class="val" id="p_profession"></span></div></div>
+        <div class="qline"><div class="qnum">৬।</div><div class="qtext split">
+          <span>ধর্মঃ <span class="val" id="p_religion"></span></span>
+          <span>শিক্ষাগত যোগ্যতাঃ <span class="val" id="p_education"></span></span>
+        </div></div>
+        <div class="qline"><div class="qnum">৭।</div><div class="qtext split">
+          <span>মোবাইল নম্বরঃ <span class="val" id="p_mobile"></span></span>
+          <span>ই-মেইল আইডিঃ <span class="val" id="p_email"></span></span>
+        </div></div>
+        <div class="qline"><div class="qnum">৮।</div><div class="qtext">জাতীয় পরিচয়পত্র নম্বরঃ <span class="val" id="p_nid"></span></div></div>
+        <div class="qline"><div class="qnum">৯।</div><div class="qtext">পাসপোর্ট নম্বর (যদি থাকে)ঃ <span class="val" id="p_passport"></span></div></div>
+
+        <div class="qline"><div class="qnum">১০।</div><div class="qtext">জরুরী যোগাযোগঃ</div></div>
+        <div class="qline" style="margin-left:22px;"><div class="qtext split">
+          <span>(ক) নামঃ <span class="val" id="p_ecName"></span></span>
+          <span>(খ) সম্পর্কঃ <span class="val" id="p_ecRelation"></span></span>
+        </div></div>
+        <div class="qline" style="margin-left:22px;"><div class="qtext split">
+          <span>(গ) ঠিকানাঃ <span class="val" id="p_ecAddr"></span></span>
+          <span>(ঘ) মোবাইল নম্বরঃ <span class="val" id="p_ecMobile"></span></span>
+        </div></div>
+
+        <div class="qline"><div class="qnum">১১।</div><div class="qtext">পরিবারের সদস্যদের বিবরণঃ</div></div>
+        <table class="fam-table">
+          <thead><tr><th style="width:36px;">ক্রঃনং</th><th>নাম</th><th style="width:60px;">বয়স</th><th>পেশা</th><th style="width:120px;">মোবাইল নম্বর</th></tr></thead>
+          <tbody id="p_famBody"></tbody>
+        </table>
+
+        <div class="qline"><div class="qnum">১২।</div><div class="qtext split">
+          <span>গৃহকর্মীর নামঃ <span class="val" id="p_maidName"></span></span>
+          <span>জাতীয় পরিচয় পত্র নংঃ <span class="val" id="p_maidNid"></span></span>
+        </div></div>
+        <div class="qline" style="margin-left:22px;"><div class="qtext split">
+          <span>মোবাইল নংঃ <span class="val" id="p_maidMobile"></span></span>
+          <span>স্থায়ী ঠিকানাঃ <span class="val" id="p_maidAddr"></span></span>
+        </div></div>
+
+        <div class="qline"><div class="qnum">১৩।</div><div class="qtext split">
+          <span>ড্রাইভারের নামঃ <span class="val" id="p_driverName"></span></span>
+          <span>জাতীয় পরিচয় পত্র নংঃ <span class="val" id="p_driverNid"></span></span>
+        </div></div>
+        <div class="qline" style="margin-left:22px;"><div class="qtext split">
+          <span>মোবাইল নংঃ <span class="val" id="p_driverMobile"></span></span>
+          <span>স্থায়ী ঠিকানাঃ <span class="val" id="p_driverAddr"></span></span>
+        </div></div>
+
+        <div class="qline"><div class="qnum">১৪।</div><div class="qtext split">
+          <span>পূর্ববর্তী বাড়িওয়ালার নামঃ <span class="val" id="p_prevOwnerName"></span></span>
+          <span>মোবাইল নম্বরঃ <span class="val" id="p_prevOwnerMobile"></span></span>
+        </div></div>
+        <div class="qline" style="margin-left:22px;"><div class="qtext">ঠিকানাঃ <span class="val" id="p_prevOwnerAddr"></span></div></div>
+        <div class="qline"><div class="qnum">১৫।</div><div class="qtext">পূর্ববর্তী বাসা ছাড়ার কারণঃ <span class="val" id="p_leaveReason"></span></div></div>
+        <div class="qline"><div class="qnum">১৬।</div><div class="qtext split">
+          <span>বর্তমান বাড়িওয়ালার নামঃ <span class="val" id="p_currOwnerName"></span></span>
+          <span>মোবাইল নম্বরঃ <span class="val" id="p_currOwnerMobile"></span></span>
+        </div></div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-line" id="p_formDate">তারিখ</div>
+        <div class="sign-line">স্বাক্ষর (মালিক/ভাড়াটিয়া)</div>
+      </div>
+
+      <div class="notes">
+        বিঃ দ্রঃ (১) ভাড়াটিয়ার ক্ষেত্রে এই ফর্মের একটি কপি মালিক অবশ্যই সংরক্ষণ করবেন।<br>
+        (২) পরিবারের সদস্য সংখ্যা বেশী হলে, অপর পৃষ্ঠায় লিপিবদ্ধ করতে হবে।
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SAVED FORMS OVERLAY ===================== -->
+<div class="overlay" id="savedOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-toolbar">
+      <h2 style="font-family:'Tiro Bangla',serif;font-weight:400;color:#2A2E23;margin:0;">সংরক্ষিত ফর্মসমূহ</h2>
+      <button class="close-x" id="closeSaved" type="button">✕ বন্ধ করুন</button>
+    </div>
+    <div id="savedList"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('theForm');
+  const fields = form.querySelectorAll('[data-key]');
+  const DRAFT_KEY = 'tf_draft_v1';
+  const SAVED_KEY = 'tf_saved_forms_v1';
+  let currentPhotoDataUrl = null;
+
+  /* ---------- Preview rendering ---------- */
+  function renderVal(id, text, isDate){
+    const el = document.getElementById('p_' + id);
+    if(!el) return;
+    let display = text || '';
+    if(isDate && text){
+      const d = new Date(text);
+      if(!isNaN(d)) display = d.toLocaleDateString('bn-BD', {year:'numeric', month:'long', day:'numeric'});
+    }
+    if(display){
+      el.textContent = display;
+      el.classList.add('filled');
+      el.classList.remove('empty');
+    } else {
+      el.textContent = '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0';
+      el.classList.add('empty');
+      el.classList.remove('filled');
+    }
+  }
+
+  function sync(){
+    fields.forEach(f=>{
+      const key = f.dataset.key;
+      const isDate = f.type === 'date';
+      renderVal(key, f.value, isDate);
+    });
+    const dateEl = document.getElementById('p_formDate');
+    const dv = form.querySelector('[data-key=formDate]').value;
+    if(dv){
+      const d = new Date(dv);
+      dateEl.textContent = 'তারিখ: ' + (isNaN(d) ? dv : d.toLocaleDateString('bn-BD',{year:'numeric',month:'long',day:'numeric'}));
+    } else {
+      dateEl.textContent = 'তারিখ';
+    }
+    saveDraft();
+  }
+
+  form.addEventListener('input', sync);
+  form.addEventListener('change', sync);
+
+  /* ---------- Photo upload ---------- */
+  const photoDrop = document.getElementById('photoDrop');
+  const photoInput = document.getElementById('photoInput');
+  const previewPhotoBox = document.getElementById('previewPhotoBox');
+  photoDrop.addEventListener('click', ()=>photoInput.click());
+  photoInput.addEventListener('change', ()=>{
+    const file = photoInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e=>{
+      currentPhotoDataUrl = e.target.result;
+      previewPhotoBox.innerHTML = '<img src="'+currentPhotoDataUrl+'" alt="ছবি">';
+      photoDrop.innerHTML = '<img src="'+currentPhotoDataUrl+'" alt="ছবি"><span>ছবি পরিবর্তন করুন</span>';
+      saveDraft();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ---------- Family members table ---------- */
+  const famRows = document.getElementById('famRows');
+  const famBody = document.getElementById('p_famBody');
+  let famCount = 0;
+  const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+  function toBn(n){ return String(n).split('').map(d => bnDigits[d] ?? d).join(''); }
+
+  function addFamRow(vals){
+    famCount++;
+    const row = document.createElement('div');
+    row.className = 'fam-row';
+    row.innerHTML =
+      '<input type="text" placeholder="নাম" data-f="name">' +
+      '<input type="text" placeholder="বয়স" data-f="age">' +
+      '<input type="text" placeholder="পেশা" data-f="occ">' +
+      '<input type="text" placeholder="মোবাইল" data-f="mob">' +
+      '<button type="button" class="fam-remove" title="মুছে ফেলুন">×</button>';
+    famRows.appendChild(row);
+    if(vals){
+      row.querySelector('[data-f=name]').value = vals.name || '';
+      row.querySelector('[data-f=age]').value = vals.age || '';
+      row.querySelector('[data-f=occ]').value = vals.occ || '';
+      row.querySelector('[data-f=mob]').value = vals.mob || '';
+    }
+    row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', ()=>{ renderFamTable(); saveDraft(); }));
+    row.querySelector('.fam-remove').addEventListener('click', ()=>{ row.remove(); renderFamTable(); saveDraft(); });
+    renderFamTable();
+  }
+
+  function renderFamTable(){
+    famBody.innerHTML = '';
+    const rows = famRows.querySelectorAll('.fam-row');
+    rows.forEach((row, i)=>{
+      const name = row.querySelector('[data-f=name]').value;
+      const age = row.querySelector('[data-f=age]').value;
+      const occ = row.querySelector('[data-f=occ]').value;
+      const mob = row.querySelector('[data-f=mob]').value;
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + toBn(i+1) + '।</td>' +
+        '<td>' + (name || '\u00A0') + '</td>' +
+        '<td>' + (age || '\u00A0') + '</td>' +
+        '<td>' + (occ || '\u00A0') + '</td>' +
+        '<td>' + (mob || '\u00A0') + '</td>';
+      famBody.appendChild(tr);
+    });
+  }
+
+  function getFamData(){
+    return Array.from(famRows.querySelectorAll('.fam-row')).map(row=>({
+      name: row.querySelector('[data-f=name]').value,
+      age: row.querySelector('[data-f=age]').value,
+      occ: row.querySelector('[data-f=occ]').value,
+      mob: row.querySelector('[data-f=mob]').value,
+    }));
+  }
+
+  document.getElementById('addFamRow').addEventListener('click', ()=>{ addFamRow(); saveDraft(); });
+
+  /* ---------- Preview / Saved overlays open+close ---------- */
+  const body = document.body;
+  document.getElementById('previewBtn').addEventListener('click', ()=>{ sync(); body.classList.add('preview-open'); });
+  document.getElementById('closePreview').addEventListener('click', ()=> body.classList.remove('preview-open'));
+  document.getElementById('savedListBtn').addEventListener('click', ()=>{ renderSavedList(); body.classList.add('saved-open'); });
+  document.getElementById('closeSaved').addEventListener('click', ()=> body.classList.remove('saved-open'));
+
+  /* ---------- Print ---------- */
+  document.getElementById('printBtn').addEventListener('click', ()=>{
+    body.classList.add('preview-open');
+    setTimeout(()=>window.print(), 50);
+  });
+
+  /* ---------- WhatsApp ---------- */
+  function get(key){ const f = form.querySelector('[data-key="'+key+'"]'); return f ? f.value : ''; }
+  function fmtDate(v){
+    if(!v) return '';
+    const d = new Date(v);
+    return isNaN(d) ? v : d.toLocaleDateString('bn-BD',{year:'numeric',month:'long',day:'numeric'});
+  }
+  function buildSummaryText(){
+    const lines = [];
+    lines.push('*অস্থায়ী ভাড়াটিয়া চুক্তিপত্র*');
+    lines.push('');
+    lines.push('নাম: ' + (get('name') || '-'));
+    lines.push('পিতার নাম: ' + (get('fatherName') || '-'));
+    lines.push('জন্ম তারিখ: ' + (fmtDate(get('dob')) || '-'));
+    lines.push('মোবাইল: ' + (get('mobile') || '-'));
+    lines.push('NID: ' + (get('nid') || '-'));
+    lines.push('স্থায়ী ঠিকানা: ' + (get('permAddr') || '-'));
+    const addr = [get('flat'),get('holding'),get('road'),get('area'),get('thana')].filter(Boolean).join(', ');
+    lines.push('বর্তমান ঠিকানা: ' + (addr || '-'));
+    const fam = getFamData().filter(r=>r.name);
+    if(fam.length){
+      lines.push('');
+      lines.push('পরিবারের সদস্য:');
+      fam.forEach((r,i)=> lines.push((i+1)+'. '+r.name+(r.age?' ('+r.age+' বছর)':'')+(r.occ?' — '+r.occ:'')));
+    }
+    lines.push('');
+    lines.push('তারিখ: ' + (fmtDate(get('formDate')) || '-'));
+    lines.push('');
+    lines.push('(সম্পূর্ণ ফর্মের প্রিন্ট/PDF কপি আলাদাভাবে পাঠানো হবে)');
+    return lines.join('\n');
+  }
+  document.getElementById('whatsappBtn').addEventListener('click', ()=>{
+    const text = encodeURIComponent(buildSummaryText());
+    window.open('https://wa.me/?text=' + text, '_blank');
+  });
+
+  /* ---------- Draft autosave ---------- */
+  function collectData(){
+    const data = {};
+    fields.forEach(f=>{ data[f.dataset.key] = f.value; });
+    data.family = getFamData();
+    data.photo = currentPhotoDataUrl;
+    return data;
+  }
+
+  function fillForm(data){
+    fields.forEach(f=>{
+      if(data[f.dataset.key] !== undefined) f.value = data[f.dataset.key];
+    });
+    famRows.innerHTML = '';
+    famCount = 0;
+    if(data.family && data.family.length){
+      data.family.forEach(r => addFamRow(r));
+    } else {
+      addFamRow(); addFamRow(); addFamRow();
+    }
+    if(data.photo){
+      currentPhotoDataUrl = data.photo;
+      previewPhotoBox.innerHTML = '<img src="'+data.photo+'" alt="ছবি">';
+      photoDrop.innerHTML = '<img src="'+data.photo+'" alt="ছবি"><span>ছবি পরিবর্তন করুন</span>';
+    } else {
+      currentPhotoDataUrl = null;
+      previewPhotoBox.innerHTML = 'এক কপি পাসপোর্ট<br>সাইজ ছবি';
+      photoDrop.innerHTML = '<span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>';
+    }
+    sync();
+  }
+
+  function saveDraft(){
+    try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(collectData())); }catch(e){}
+  }
+  function loadDraft(){
+    try{
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if(raw) fillForm(JSON.parse(raw));
+    }catch(e){}
+  }
+
+  /* ---------- Saved forms (named list) ---------- */
+  function getSavedForms(){
+    try{ return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; }catch(e){ return []; }
+  }
+  function setSavedForms(list){
+    localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+    document.getElementById('savedCount').textContent = toBn(list.length);
+  }
+
+  document.getElementById('saveFormBtn').addEventListener('click', ()=>{
+    const suggested = get('name') || ('ফর্ম');
+    const label = prompt('এই ফর্মটির নাম দিন (যেমন ভাড়াটিয়ার নাম):', suggested);
+    if(label === null) return;
+    const list = getSavedForms();
+    list.unshift({
+      id: 'f' + Date.now(),
+      label: label || suggested,
+      savedAt: new Date().toISOString(),
+      data: collectData()
+    });
+    setSavedForms(list);
+    alert('ফর্মটি সংরক্ষণ করা হয়েছে।');
+  });
+
+  function renderSavedList(){
+    const wrap = document.getElementById('savedList');
+    const list = getSavedForms();
+    if(!list.length){
+      wrap.innerHTML = '<div class="empty-state">এখনও কোনো ফর্ম সংরক্ষণ করা হয়নি। ফর্ম পূরণের পর "এই ফর্ম সংরক্ষণ করুন" বাটনে ক্লিক করুন।</div>';
+      return;
+    }
+    wrap.innerHTML = '';
+    list.forEach(item=>{
+      const d = new Date(item.savedAt);
+      const dateStr = isNaN(d) ? '' : d.toLocaleDateString('bn-BD',{year:'numeric',month:'long',day:'numeric'}) + ' ' + d.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
+      const card = document.createElement('div');
+      card.className = 'saved-card';
+      card.innerHTML =
+        '<div class="info"><b>'+ (item.label || 'নামহীন ফর্ম') +'</b><div>সংরক্ষণের সময়: '+dateStr+'</div></div>' +
+        '<div class="btnbar">' +
+          '<button class="btn btn-outline btn-sm" data-act="load">লোড করুন</button>' +
+          '<button class="btn btn-danger-outline btn-sm" data-act="delete">মুছুন</button>' +
+        '</div>';
+      card.querySelector('[data-act=load]').addEventListener('click', ()=>{
+        fillForm(item.data);
+        body.classList.remove('saved-open');
+      });
+      card.querySelector('[data-act=delete]').addEventListener('click', ()=>{
+        if(!confirm('এই সংরক্ষিত ফর্মটি মুছে ফেলতে চান?')) return;
+        const newList = getSavedForms().filter(x=>x.id !== item.id);
+        setSavedForms(newList);
+        renderSavedList();
+      });
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------- Reset ---------- */
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if(!confirm('বর্তমান ফর্মের সব তথ্য মুছে ফেলতে চান? (সংরক্ষিত ফর্মগুলো থাকবে)')) return;
+    form.reset();
+    famRows.innerHTML = '';
+    famCount = 0;
+    addFamRow(); addFamRow(); addFamRow();
+    currentPhotoDataUrl = null;
+    previewPhotoBox.innerHTML = 'এক কপি পাসপোর্ট<br>সাইজ ছবি';
+    photoDrop.innerHTML = '<span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>';
+    sync();
+  });
+
+  /* ---------- Close overlays with backdrop click / Esc ---------- */
+  document.getElementById('previewOverlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'previewOverlay') body.classList.remove('preview-open');
+  });
+  document.getElementById('savedOverlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'savedOverlay') body.classList.remove('saved-open');
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){ body.classList.remove('preview-open'); body.classList.remove('saved-open'); }
+  });
+
+  /* ---------- Init ---------- */
+  setSavedForms(getSavedForms());
+  loadDraft();
+  if(!famRows.children.length){ addFamRow(); addFamRow(); addFamRow(); }
+  sync();
+})();
+</script>
+
+</body>
+</html>
