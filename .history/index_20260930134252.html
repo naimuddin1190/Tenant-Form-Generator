@@ -235,7 +235,6 @@
   }
   body.preview-open #previewOverlay{display:flex;}
   body.saved-open #savedOverlay{display:flex;}
-  body.sync-open #syncOverlay{display:flex;}
   .overlay-inner{width:100%;max-width:860px;}
   .overlay-toolbar{
     display:flex;justify-content:space-between;align-items:center;
@@ -327,7 +326,7 @@
 
   @media print{
     body{background:#fff;}
-    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,.hint-note,#savedOverlay,#syncOverlay{display:none !important;}
+    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,.hint-note,#savedOverlay{display:none !important;}
     #previewOverlay{display:block !important;position:static;background:none;padding:0;inset:auto;}
     .overlay-inner{max-width:100%;}
     .paper{box-shadow:none;border:none;border-radius:0;padding:14mm 16mm;}
@@ -351,7 +350,6 @@
   <div class="btnbar">
     <button class="btn btn-primary" id="previewBtn" type="button">👁 প্রিভিউ দেখুন</button>
     <button class="btn btn-ghost" id="savedListBtn" type="button">📁 সংরক্ষিত ফর্ম<span class="badge" id="savedCount">0</span></button>
-    <button class="btn btn-ghost" id="syncSettingsBtn" type="button">☁️ সিঙ্ক সেটিংস</button>
   </div>
 </div>
 
@@ -659,28 +657,6 @@
   </div>
 </div>
 
-<!-- ===================== SYNC SETTINGS OVERLAY ===================== -->
-<div class="overlay" id="syncOverlay">
-  <div class="overlay-inner" style="max-width:540px;">
-    <div class="overlay-toolbar">
-      <h2 style="font-family:'Tiro Bangla',serif;font-weight:400;color:#2A2E23;margin:0;">☁️ ডিভাইস সিঙ্ক সেটিংস</h2>
-      <button class="close-x" id="closeSync" type="button">✕ বন্ধ করুন</button>
-    </div>
-    <div class="card">
-      <div class="card-sub" style="margin-left:0;margin-top:0;">
-        সব ডিভাইসে একই সংরক্ষিত ফর্মের তালিকা দেখতে চাইলে একটা ফ্রি Google Sheet + Apps Script Web App বানিয়ে তার লিংক ও গোপন কী এখানে বসান। সেটআপ গাইড চ্যাটে দেওয়া হয়েছে।
-      </div>
-      <div class="field"><label>Web App URL</label><input type="text" id="syncUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec"></div>
-      <div class="field"><label>সিক্রেট কী</label><input type="text" id="syncKeyInput" placeholder="আপনার গোপন কী"></div>
-      <div class="btnbar" style="margin-top:12px;">
-        <button class="btn btn-accent btn-sm" id="saveSyncBtn" type="button">💾 সেভ ও কানেক্ট করুন</button>
-        <button class="btn btn-danger btn-sm" id="disableSyncBtn" type="button">সিঙ্ক বন্ধ করুন</button>
-      </div>
-      <p id="syncStatus" class="hint-note" style="margin-top:10px;"></p>
-    </div>
-  </div>
-</div>
-
 <script>
 (function(){
   const form = document.getElementById('theForm');
@@ -934,115 +910,12 @@
     }catch(e){}
   }
 
-  /* ================= SAVED FORMS (CRUD, local cache) ================= */
+  /* ================= SAVED FORMS (CRUD) ================= */
   function getSavedForms(){ try{ return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; }catch(e){ return []; } }
   function setSavedForms(list){
     localStorage.setItem(SAVED_KEY, JSON.stringify(list));
     document.getElementById('savedCount').textContent = toBn(list.length);
   }
-
-  /* ================= OPTIONAL CROSS-DEVICE SYNC (Google Sheets Web App) ================= */
-  const SYNC_URL_KEY = 'tf_sync_url';
-  const SYNC_SECRET_KEY = 'tf_sync_secret';
-  function getSyncConfig(){ return { url: localStorage.getItem(SYNC_URL_KEY) || '', key: localStorage.getItem(SYNC_SECRET_KEY) || '' }; }
-  function isSyncEnabled(){ const c = getSyncConfig(); return !!(c.url && c.key); }
-
-  async function apiCall(action, payload){
-    const c = getSyncConfig();
-    if(!c.url || !c.key) throw new Error('sync-not-configured');
-    const body = Object.assign({ action, key: c.key }, payload || {});
-    // text/plain avoids a CORS preflight that Apps Script Web Apps don't handle
-    const res = await fetch(c.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
-    const json = await res.json();
-    if(json.error) throw new Error(json.error);
-    return json;
-  }
-  // Small helper: shrink big base64 images before they go into a Sheet cell (~50k char/cell limit)
-  function compressDataUrl(dataUrl, maxDim, quality){
-    return new Promise((resolve)=>{
-      if(!dataUrl){ resolve(dataUrl); return; }
-      const img = new Image();
-      img.onload = ()=>{
-        let w = img.width, h = img.height;
-        const scale = Math.min(1, maxDim / Math.max(w,h));
-        w = Math.round(w*scale); h = Math.round(h*scale);
-        const c = document.createElement('canvas'); c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL('image/jpeg', quality || 0.7));
-      };
-      img.onerror = ()=> resolve(dataUrl);
-      img.src = dataUrl;
-    });
-  }
-  async function shrinkItemImages(item){
-    const d = Object.assign({}, item.data);
-    if(d.photo) d.photo = await compressDataUrl(d.photo, 500, 0.7);
-    if(d.signature) d.signature = await compressDataUrl(d.signature, 500, 0.7);
-    return Object.assign({}, item, { data: d });
-  }
-
-  function setSyncStatus(msg, isError){
-    const el = document.getElementById('syncStatus');
-    if(!el) return;
-    el.textContent = msg;
-    el.style.color = isError ? 'var(--danger)' : 'var(--green-dark)';
-  }
-  function refreshSyncPanel(){
-    const c = getSyncConfig();
-    document.getElementById('syncUrlInput').value = c.url;
-    document.getElementById('syncKeyInput').value = c.key;
-    setSyncStatus(isSyncEnabled() ? '✅ সিঙ্ক চালু আছে — সব ডিভাইসে একই তালিকা দেখাবে।' : 'সিঙ্ক বন্ধ আছে — শুধু এই ডিভাইসেই ফর্মগুলো সংরক্ষিত থাকবে।', false);
-  }
-  document.getElementById('syncSettingsBtn').addEventListener('click', ()=>{ refreshSyncPanel(); body.classList.add('sync-open'); });
-  document.getElementById('closeSync').addEventListener('click', ()=> body.classList.remove('sync-open'));
-  document.getElementById('syncOverlay').addEventListener('click', (e)=>{ if(e.target.id==='syncOverlay') body.classList.remove('sync-open'); });
-  document.getElementById('saveSyncBtn').addEventListener('click', async ()=>{
-    const url = document.getElementById('syncUrlInput').value.trim();
-    const key = document.getElementById('syncKeyInput').value.trim();
-    if(!url || !key){ setSyncStatus('URL এবং সিক্রেট কী দুটোই দিতে হবে।', true); return; }
-    localStorage.setItem(SYNC_URL_KEY, url);
-    localStorage.setItem(SYNC_SECRET_KEY, key);
-    setSyncStatus('⏳ কানেকশন যাচাই করা হচ্ছে...', false);
-    try{
-      const remote = await fetchSavedFormsRemote();
-      setSavedForms(remote);
-      setSyncStatus('✅ কানেক্ট হয়েছে! ' + toBn(remote.length) + 'টা ফর্ম পাওয়া গেছে।', false);
-    }catch(err){
-      console.error(err);
-      setSyncStatus('❌ কানেক্ট করা যায়নি: URL/কী চেক করুন। (' + err.message + ')', true);
-    }
-  });
-  document.getElementById('disableSyncBtn').addEventListener('click', ()=>{
-    localStorage.removeItem(SYNC_URL_KEY);
-    localStorage.removeItem(SYNC_SECRET_KEY);
-    refreshSyncPanel();
-  });
-
-  async function fetchSavedFormsRemote(){
-    const json = await apiCall('list');
-    return json.items || [];
-  }
-  async function saveSavedFormRemote(item){
-    const slim = await shrinkItemImages(item);
-    await apiCall('save', { item: slim });
-  }
-  async function deleteSavedFormRemote(id){
-    await apiCall('delete', { id });
-  }
-  // Local cache is shown immediately; if sync is configured we refresh from
-  // the shared sheet in the background and re-render once it arrives.
-  async function refreshSavedList(){
-    if(!isSyncEnabled()) return getSavedForms();
-    try{
-      const remote = await fetchSavedFormsRemote();
-      setSavedForms(remote);
-      return remote;
-    }catch(err){
-      console.error(err);
-      return getSavedForms();
-    }
-  }
-
   function updateEditBanner(){
     const banner = document.getElementById('editBanner');
     if(currentEditingId){
@@ -1060,10 +933,8 @@
     resetFormState();
   });
 
-  document.getElementById('saveFormBtn').addEventListener('click', async ()=>{
-    const btn = document.getElementById('saveFormBtn');
+  document.getElementById('saveFormBtn').addEventListener('click', ()=>{
     const list = getSavedForms();
-    let item;
     if(currentEditingId){
       const idx = list.findIndex(x=>x.id===currentEditingId);
       if(idx > -1){
@@ -1072,36 +943,25 @@
         list[idx].label = newLabel || list[idx].label;
         list[idx].data = collectData();
         list[idx].savedAt = new Date().toISOString();
-        item = list[idx];
         setSavedForms(list);
+        alert('পরিবর্তন সংরক্ষণ করা হয়েছে।');
+        return;
       }
     }
-    if(!item){
-      const suggested = (form.querySelector('[data-key=name]').value) || 'ফর্ম';
-      const label = prompt('এই ফর্মটির নাম দিন (যেমন ভাড়াটিয়ার নাম):', suggested);
-      if(label === null) return;
-      item = { id:'f'+Date.now(), label: label || suggested, savedAt: new Date().toISOString(), data: collectData() };
-      list.unshift(item);
-      setSavedForms(list);
-      currentEditingId = item.id;
-      updateEditBanner();
-    }
-    if(isSyncEnabled()){
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '☁️ সিঙ্ক হচ্ছে...';
-      try{ await saveSavedFormRemote(item); }
-      catch(err){ console.error(err); alert('ফর্মটি এই ডিভাইসে সেভ হয়েছে, কিন্তু অন্য ডিভাইসে সিঙ্ক করতে সমস্যা হয়েছে: ' + err.message); }
-      finally{ btn.disabled = false; btn.innerHTML = originalHtml; }
-    }
+    const suggested = (form.querySelector('[data-key=name]').value) || 'ফর্ম';
+    const label = prompt('এই ফর্মটির নাম দিন (যেমন ভাড়াটিয়ার নাম):', suggested);
+    if(label === null) return;
+    const item = { id:'f'+Date.now(), label: label || suggested, savedAt: new Date().toISOString(), data: collectData() };
+    list.unshift(item);
+    setSavedForms(list);
+    currentEditingId = item.id;
+    updateEditBanner();
     alert('ফর্মটি সংরক্ষণ করা হয়েছে।');
   });
 
-  async function renderSavedList(){
+  function renderSavedList(){
     const wrap = document.getElementById('savedList');
-    wrap.innerHTML = isSyncEnabled()
-      ? '<div class="empty-state">☁️ সব ডিভাইস থেকে তথ্য আনা হচ্ছে...</div>'
-      : '<div class="empty-state">লোড হচ্ছে...</div>';
-    const list = await refreshSavedList();
+    const list = getSavedForms();
     if(!list.length){
       wrap.innerHTML = '<div class="empty-state">এখনও কোনো ফর্ম সংরক্ষণ করা হয়নি। ফর্ম পূরণের পর "এই ফর্ম সংরক্ষণ করুন" বাটনে ক্লিক করুন।</div>';
       return;
@@ -1134,14 +994,10 @@
         printFromOverlay();
       });
       card.querySelector('[data-act=share]').addEventListener('click', ()=> openPreviewForItem(item));
-      card.querySelector('[data-act=delete]').addEventListener('click', async ()=>{
+      card.querySelector('[data-act=delete]').addEventListener('click', ()=>{
         if(!confirm('এই সংরক্ষিত ফর্মটি মুছে ফেলতে চান?')) return;
         setSavedForms(getSavedForms().filter(x=>x.id !== item.id));
         if(currentEditingId === item.id){ currentEditingId = null; updateEditBanner(); }
-        if(isSyncEnabled()){
-          try{ await deleteSavedFormRemote(item.id); }
-          catch(err){ console.error(err); alert('এই ডিভাইস থেকে মুছে ফেলা হয়েছে, কিন্তু অন্য ডিভাইসে মুছতে সমস্যা হয়েছে: ' + err.message); }
-        }
         renderSavedList();
       });
       wrap.appendChild(card);
@@ -1149,7 +1005,6 @@
   }
   document.getElementById('savedListBtn').addEventListener('click', ()=>{ renderSavedList(); body.classList.add('saved-open'); });
   document.getElementById('closeSaved').addEventListener('click', ()=> body.classList.remove('saved-open'));
-
 
   /* ================= PREVIEW OVERLAY CONTROL ================= */
   function updateContextLabel(){
@@ -1191,7 +1046,7 @@
   });
   document.getElementById('previewOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'previewOverlay'){ body.classList.remove('preview-open'); resetPaperScale(); } });
   document.getElementById('savedOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'savedOverlay') body.classList.remove('saved-open'); });
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ body.classList.remove('preview-open'); body.classList.remove('saved-open'); body.classList.remove('sync-open'); resetPaperScale(); } });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ body.classList.remove('preview-open'); body.classList.remove('saved-open'); resetPaperScale(); } });
 
   /* ================= PRINT: FILL THE WHOLE PAGE (A4 / LEGAL), ONE PAGE ONLY ================= */
   const PAGE_SIZES = { a4:{w:210,h:297}, legal:{w:215.9,h:355.6} };
@@ -1231,26 +1086,6 @@
   document.getElementById('paperSizeSelect').addEventListener('change', fitPaperToPage);
   function printFromOverlay(){ fitPaperToPage(); setTimeout(()=>window.print(), 70); }
   document.getElementById('printBtn').addEventListener('click', printFromOverlay);
-  async function openPrintablePdf(){
-    const btn = document.getElementById('printBtn');
-    const originalHtml = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '⏳ তৈরি হচ্ছে...';
-    try{
-      const blob = await buildPdfBlob();
-      const url = URL.createObjectURL(blob);
-      const opened = window.open(url, '_blank');
-      if(!opened){
-        const a = document.createElement('a'); a.href = url; a.download = 'tenant-form.pdf';
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(()=>URL.revokeObjectURL(url), 30000);
-    } catch(err){
-      console.error(err);
-      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
-    } finally {
-      btn.disabled = false; btn.innerHTML = originalHtml;
-    }
-  }
   window.addEventListener('beforeprint', fitPaperToPage);
   window.addEventListener('afterprint', resetPaperScale);
 
@@ -1324,7 +1159,6 @@
   if(!famRows.children.length){ addFamRow(); addFamRow(); addFamRow(); }
   updateEditBanner();
   paintPreview(collectData());
-  if(isSyncEnabled()){ refreshSavedList().catch(()=>{}); } // quiet background refresh of the badge count
 })();
 </script>
 
