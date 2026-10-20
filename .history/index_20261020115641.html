@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র — ফর্ম বিল্ডার</title>
+<link rel="icon" type="image/png" href="/assests/logo2.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --paper:#FBF8F1;
@@ -31,7 +34,7 @@
   body{
     background:var(--bg);
     color:var(--ink);
-    font-family:'Hind Siliguri','Noto Sans Bengali',sans-serif;
+    font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;
     -webkit-font-smoothing:antialiased;
   }
 
@@ -79,6 +82,7 @@
   }
   .btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.16);}
   .btn:active{transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,.12);}
+  .btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
   .btn-sm{padding:7px 13px;font-size:12px;border-radius:999px;}
   .btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#17331F;}
   .btn-accent{background:linear-gradient(135deg,var(--green-light),var(--green));color:#fff;}
@@ -89,7 +93,7 @@
   .btn-outline:hover{background:#F2FAF4;}
   .btn-danger{background:#fff;color:var(--danger);border:1.5px solid #F0C9CE;}
   .btn-danger:hover{background:#FBEEEF;}
-  .btnbar{display:flex;gap:9px;flex-wrap:wrap;}
+  .btnbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
   .badge{
     background:var(--gold);color:var(--green-dark);border-radius:999px;
     font-size:11px;font-weight:800;padding:1px 7px;margin-left:2px;
@@ -102,12 +106,11 @@
     display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   }
   .edit-banner{
-    max-width:800px;margin:0 auto 6px;padding:12px 18px;
+    max-width:760px;margin:0 auto 6px;padding:12px 18px;
     background:#FFF5DE;border:1px solid #F0DDA0;border-radius:12px;
     display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   }
   .edit-banner .txt{font-size:13px;color:#5B4A16;font-weight:600;}
-  .edit-banner{margin-left:20px;margin-right:20px;}
 
   .form-panel{max-width:800px;margin:14px auto 0;padding:0 20px 40px;}
 
@@ -154,6 +157,7 @@
     color:var(--ink);
     transition:border-color .15s ease, background .15s ease;
   }
+  .field select{cursor:pointer;}
   .field textarea{resize:vertical;min-height:46px;}
   .field input:focus,.field textarea:focus,.field select:focus{
     outline:none;
@@ -180,18 +184,23 @@
 
   .fam-row{
     display:grid;
-    grid-template-columns:1fr 68px 1fr 1fr 30px;
-    gap:7px;
+    grid-template-columns:1.2fr 60px 1fr 1fr 1fr 28px;
+    gap:6px;
     margin-bottom:8px;
     align-items:center;
   }
-  .fam-row input{padding:8px 9px;font-size:13px;border:1.5px solid #E1DBC5;border-radius:8px;background:#FCFBF6;}
+  .fam-row input{padding:8px 8px;font-size:12.5px;border:1.5px solid #E1DBC5;border-radius:8px;background:#FCFBF6;}
   .fam-row input:focus{outline:none;border-color:var(--focus);background:#fff;}
-  @media (max-width:520px){.fam-row{grid-template-columns:1fr 1fr;}}
+  @media (max-width:640px){.fam-row{grid-template-columns:1fr 1fr;}}
   .fam-remove{
     background:#FBEEEF;border:none;color:var(--danger);cursor:pointer;font-size:16px;line-height:1;
     width:26px;height:26px;border-radius:50%;
   }
+  .fam-head-row{
+    display:grid;grid-template-columns:1.2fr 60px 1fr 1fr 1fr 28px;gap:6px;
+    font-size:11px;color:var(--ink-soft);font-weight:700;margin-bottom:4px;
+  }
+  @media (max-width:640px){.fam-head-row{display:none;}}
   .add-row-btn{
     background:#F2FAF4;
     border:1.5px dashed var(--green-light);
@@ -227,6 +236,7 @@
   }
   body.preview-open #previewOverlay{display:flex;}
   body.saved-open #savedOverlay{display:flex;}
+  body.sync-open #syncOverlay{display:flex;}
   .overlay-inner{width:100%;max-width:860px;}
   .overlay-toolbar{
     display:flex;justify-content:space-between;align-items:center;
@@ -249,92 +259,58 @@
 
   /* ============ PAPER / DOCUMENT ============ */
   .paper{
+    --s:1; /* continuous fill/fit scale factor, set by JS */
     width:100%;
     background:var(--paper);
     border:1px solid var(--paper-edge);
     box-shadow:0 10px 30px rgba(20,22,17,.25);
     padding:34px 38px 30px;
-    font-family:'Hind Siliguri','Noto Sans Bengali',sans-serif;
+    font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;
     color:var(--ink);
     border-radius:4px;
   }
   .doc-head{
     display:grid;
-    grid-template-columns:150px 1fr 190px;
-    gap:14px;
+    grid-template-columns:calc(150px*var(--s)) 1fr calc(190px*var(--s));
+    gap:calc(14px*var(--s));
     align-items:start;
     margin-bottom:6px;
   }
   @media (max-width:600px){ .doc-head{grid-template-columns:1fr;} }
   .photo-box{
-    width:150px;height:150px;
+    width:calc(150px*var(--s));height:calc(150px*var(--s));
     border:1px solid var(--ink);
     display:flex;align-items:center;justify-content:center;
-    font-size:11px;color:var(--ink-soft);
+    font-size:calc(11px*var(--s));color:var(--ink-soft);
     text-align:center;overflow:hidden;
   }
   .photo-box img{width:100%;height:100%;object-fit:cover;}
   .seal{text-align:center;}
-  .seal svg{width:72px;height:72px;}
-  .seal img{max-width:150px;max-height:150px;object-fit:contain;}
-  .doc-title{font-family:'Tiro Bangla',serif;text-align:center;font-size:26px;margin:6px 0 14px;color:var(--ink);}
-  .addr-box{border:1px solid var(--ink);padding:8px 10px;font-size:12.5px;line-height:2.05;}
+  .seal svg{width:calc(72px*var(--s));height:calc(72px*var(--s));}
+  .seal img{max-width:calc(150px*var(--s));max-height:calc(150px*var(--s));object-fit:contain;}
+  .doc-title{font-family:'Tiro Bangla',serif;text-align:center;font-size:calc(26px*var(--s));margin:calc(6px*var(--s)) 0 calc(14px*var(--s));color:var(--ink);}
+  .addr-box{border:1px solid var(--ink);padding:calc(8px*var(--s)) calc(10px*var(--s));font-size:calc(12.5px*var(--s));line-height:2.05;}
   .addr-box .al{border-bottom:1px dotted var(--ink-soft);display:inline-block;min-width:60%;}
 
-  .doc-body{font-size:13.5px;line-height:1.9;}
-  .qline{display:flex;gap:8px;margin:6px 0;}
-  .qnum{flex:0 0 22px;font-weight:600;}
+  .doc-body{font-size:calc(13.5px*var(--s));line-height:1.9;}
+  .qline{display:flex;gap:calc(8px*var(--s));margin:calc(6px*var(--s)) 0;}
+  .qnum{flex:0 0 calc(22px*var(--s));font-weight:600;}
   .qtext{flex:1;}
   .val{border-bottom:1px dotted var(--ink-soft);padding:0 2px 1px;display:inline-block;min-width:40px;}
   .val.empty{color:transparent;min-width:80px;}
   .val.filled{color:var(--ink);font-weight:500;}
   .split{display:flex;flex-wrap:wrap;gap:4px 18px;}
 
-  table.fam-table{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:12.5px;}
-  table.fam-table th,table.fam-table td{border:1px solid var(--ink);padding:5px 8px;text-align:left;}
+  table.fam-table{width:100%;border-collapse:collapse;margin:calc(8px*var(--s)) 0 4px;font-size:calc(12px*var(--s));}
+  table.fam-table th,table.fam-table td{border:1px solid var(--ink);padding:calc(5px*var(--s)) calc(7px*var(--s));text-align:left;}
   table.fam-table th{background:#F3F0E7;}
 
-  .sign-row{display:flex;justify-content:space-between;margin-top:40px;font-size:12.5px;gap:16px;}
-  .sign-line{border-top:1px dotted var(--ink-soft);width:220px;text-align:center;padding-top:4px;}
+  .sign-row{display:flex;justify-content:space-between;margin-top:calc(40px*var(--s));font-size:calc(12.5px*var(--s));gap:16px;}
+  .sign-line{border-top:1px dotted var(--ink-soft);width:calc(220px*var(--s));text-align:center;padding-top:4px;}
   .sig-img-wrap{min-height:44px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:2px;}
-  .sig-img-wrap img{max-height:50px;max-width:100%;}
+  .sig-img-wrap img{max-height:calc(50px*var(--s));max-width:100%;}
 
-  .notes{margin-top:18px;font-size:11px;color:var(--ink-soft);line-height:1.7;}
-
-  /* ---- compact print levels (progressively shrink to fit one page) ---- */
-  #paper.compact-1 .doc-body{font-size:12.3px;line-height:1.62;}
-  #paper.compact-1 .qline{margin:4px 0;}
-  #paper.compact-1 .doc-title{font-size:22px;margin:4px 0 10px;}
-  #paper.compact-1 .sign-row{margin-top:26px;}
-  #paper.compact-1 .notes{margin-top:11px;font-size:10px;}
-  #paper.compact-1 .addr-box{font-size:11.5px;line-height:1.85;}
-
-  #paper.compact-2 .doc-body{font-size:11.3px;line-height:1.48;}
-  #paper.compact-2 .qline{margin:3px 0;}
-  #paper.compact-2 .doc-title{font-size:19px;margin:3px 0 8px;}
-  #paper.compact-2 table.fam-table{font-size:11px;}
-  #paper.compact-2 table.fam-table th,#paper.compact-2 table.fam-table td{padding:3px 6px;}
-  #paper.compact-2 .sign-row{margin-top:16px;}
-  #paper.compact-2 .notes{margin-top:8px;font-size:9px;}
-  #paper.compact-2 .addr-box{font-size:11px;line-height:1.7;}
-  #paper.compact-2 .doc-head{grid-template-columns:120px 1fr 170px;}
-  #paper.compact-2 .photo-box{width:120px;height:120px;}
-  #paper.compact-2 .seal svg{width:60px;height:60px;}
-  #paper.compact-2 .seal img{max-width:90px;max-height:90px;}
-
-  #paper.compact-3 .doc-body{font-size:10.3px;line-height:1.34;}
-  #paper.compact-3 .qline{margin:2px 0;}
-  #paper.compact-3 .doc-title{font-size:17px;margin:2px 0 6px;}
-  #paper.compact-3 table.fam-table{font-size:10px;}
-  #paper.compact-3 table.fam-table th,#paper.compact-3 table.fam-table td{padding:2px 5px;}
-  #paper.compact-3 .sign-row{margin-top:10px;}
-  #paper.compact-3 .sign-line{width:160px;font-size:11px;}
-  #paper.compact-3 .notes{margin-top:6px;font-size:8px;}
-  #paper.compact-3 .addr-box{font-size:10px;line-height:1.5;}
-  #paper.compact-3 .doc-head{grid-template-columns:100px 1fr 150px;}
-  #paper.compact-3 .photo-box{width:100px;height:100px;}
-  #paper.compact-3 .seal svg{width:50px;height:50px;}
-  #paper.compact-3 .seal img{max-width:70px;max-height:70px;}
+  .notes{margin-top:calc(18px*var(--s));font-size:calc(11px*var(--s));color:var(--ink-soft);line-height:1.7;}
 
   /* ============ Saved forms list ============ */
   .saved-card{
@@ -348,16 +324,14 @@
     background:#fff;border:2px dashed var(--card-border);border-radius:14px;
     padding:34px;text-align:center;color:var(--ink-soft);font-size:13.5px;
   }
+  .hint-note{font-size:11.5px;color:var(--ink-soft);margin-top:8px;}
 
   @media print{
     body{background:#fff;}
-    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,#savedOverlay{display:none !important;}
+    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,.hint-note,#savedOverlay,#syncOverlay{display:none !important;}
     #previewOverlay{display:block !important;position:static;background:none;padding:0;inset:auto;}
     .overlay-inner{max-width:100%;}
     .paper{box-shadow:none;border:none;border-radius:0;padding:14mm 16mm;}
-    #paper.compact-1{padding:11mm 14mm;}
-    #paper.compact-2{padding:8mm 12mm;}
-    #paper.compact-3{padding:6mm 10mm;}
   }
 </style>
 </head>
@@ -378,6 +352,7 @@
   <div class="btnbar">
     <button class="btn btn-primary" id="previewBtn" type="button">👁 প্রিভিউ দেখুন</button>
     <button class="btn btn-ghost" id="savedListBtn" type="button">📁 সংরক্ষিত ফর্ম<span class="badge" id="savedCount">0</span></button>
+    <button class="btn btn-ghost" id="syncSettingsBtn" type="button">☁️ সিঙ্ক সেটিংস</button>
   </div>
 </div>
 
@@ -429,10 +404,31 @@
             </select>
           </div>
         </div>
-        <div class="field"><label>স্থায়ী ঠিকানা</label><textarea data-key="permAddr"></textarea></div>
-        <div class="field"><label>পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানা</label><textarea data-key="profession"></textarea></div>
+
+        <div class="field" style="margin-bottom:6px;"><label>স্থায়ী ঠিকানা</label></div>
         <div class="row2">
-          <div class="field"><label>ধর্ম</label><input type="text" data-key="religion"></div>
+          <div class="field"><label>বাসা/হোল্ডিং</label><input type="text" data-key="permHolding"></div>
+          <div class="field"><label>গ্রাম/রাস্তা</label><input type="text" data-key="permVillageRoad"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>ডাকঘর</label><input type="text" data-key="permPostOffice"></div>
+          <div class="field"><label>থানা</label><input type="text" data-key="permThana"></div>
+        </div>
+        <div class="field"><label>জেলা</label><input type="text" data-key="permDistrict"></div>
+
+        <div class="field" style="margin-top:12px;"><label>পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানা</label><textarea data-key="profession"></textarea></div>
+        <div class="row2">
+          <div class="field">
+            <label>ধর্ম</label>
+            <select data-key="religion">
+              <option value="">নির্বাচন করুন</option>
+              <option>ইসলাম</option>
+              <option>হিন্দু</option>
+              <option>বৌদ্ধ</option>
+              <option>খ্রিস্টান</option>
+              <option>অন্যান্য</option>
+            </select>
+          </div>
           <div class="field"><label>শিক্ষাগত যোগ্যতা</label><input type="text" data-key="education"></div>
         </div>
         <div class="row2">
@@ -459,6 +455,9 @@
 
       <div class="card">
         <div class="card-head"><div class="num">১১</div><div class="title">পরিবারের সদস্যদের বিবরণ</div></div>
+        <div class="fam-head-row">
+          <div>নাম</div><div>বয়স</div><div>সম্পর্ক</div><div>পেশা</div><div>মোবাইল</div><div></div>
+        </div>
         <div id="famRows"></div>
         <button type="button" class="add-row-btn" id="addFamRow">+ সদস্য যোগ করুন</button>
       </div>
@@ -508,12 +507,14 @@
 
       <div class="card">
         <div class="card-head"><div class="num">✍</div><div class="title">ভাড়াটিয়ার স্বাক্ষর</div></div>
-        <div class="card-sub">নিচে মাউস/আঙুল দিয়ে সরাসরি স্বাক্ষর আঁকুন, অথবা ক্যামেরা দিয়ে কাগজে করা স্বাক্ষরের ছবি তুলে যোগ করুন।</div>
+        <div class="card-sub">নিচে মাউস/আঙুল দিয়ে সরাসরি স্বাক্ষর আঁকুন, অথবা ক্যামেরা/গ্যালারি থেকে সইয়ের ছবি যোগ করুন।</div>
         <div class="sig-pad-wrap"><canvas id="sigCanvas" width="600" height="180"></canvas></div>
         <div class="btnbar" style="margin-top:10px;">
           <button type="button" class="btn btn-outline btn-sm" id="sigClearBtn">🧹 মুছুন</button>
-          <button type="button" class="btn btn-outline btn-sm" id="sigCameraBtn">📷 ক্যামেরা দিয়ে ছবি তুলুন</button>
+          <button type="button" class="btn btn-outline btn-sm" id="sigCameraBtn">📷 ক্যামেরা দিয়ে তুলুন</button>
+          <button type="button" class="btn btn-outline btn-sm" id="sigGalleryBtn">🖼 গ্যালারি থেকে বাছুন</button>
           <input type="file" accept="image/*" capture="environment" id="sigCameraInput" style="display:none">
+          <input type="file" accept="image/*" id="sigGalleryInput" style="display:none">
         </div>
       </div>
 
@@ -531,12 +532,8 @@
           <option value="legal">Legal সাইজ</option>
         </select>
         <button class="btn btn-primary" id="printBtn" type="button">🖨 প্রিন্ট / PDF সেভ</button>
-        <button class="btn btn-whatsapp" id="whatsappBtn" type="button">
-          <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-            <path d="M16.04 3C9.4 3 4 8.36 4 15c0 2.36.66 4.56 1.8 6.44L4 29l7.76-1.75A11.9 11.9 0 0 0 16.04 27C22.68 27 28 21.64 28 15S22.68 3 16.04 3Zm0 21.7c-1.98 0-3.83-.55-5.4-1.5l-.39-.23-4.6 1.04 1.03-4.48-.25-.4A9.6 9.6 0 0 1 6.3 15c0-5.35 4.4-9.7 9.74-9.7 5.35 0 9.7 4.35 9.7 9.7s-4.35 9.7-9.7 9.7Zm5.34-7.28c-.29-.15-1.74-.86-2.01-.96-.27-.1-.47-.15-.66.15-.2.29-.76.96-.93 1.15-.17.2-.34.22-.63.08-.29-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.2-.29.29-.49.1-.2.05-.37-.02-.51-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5-.17 0-.37-.02-.56-.02-.2 0-.51.07-.78.37-.27.29-1.02 1-1.02 2.44s1.05 2.83 1.19 3.03c.15.2 2.06 3.15 5 4.42.7.3 1.24.48 1.67.61.7.22 1.34.19 1.84.12.56-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.13-.27-.2-.56-.35Z"/>
-          </svg>
-          WhatsApp-এ পাঠান
-        </button>
+        <button class="btn btn-whatsapp" id="whatsappJpgBtn" type="button">🖼 JPG পাঠান</button>
+        <button class="btn btn-whatsapp" id="whatsappPdfBtn" type="button">📄 PDF পাঠান</button>
         <button class="btn btn-outline" id="editFromPreviewBtn" type="button" style="display:none;">✏️ এডিট করুন</button>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
@@ -544,6 +541,7 @@
         <button class="close-x" id="closePreview" type="button">✕ বন্ধ করুন</button>
       </div>
     </div>
+    <p class="hint-note" style="text-align:center;">📱 মোবাইলে "JPG/PDF পাঠান" চাপলে শেয়ার মেনু থেকে সরাসরি WhatsApp বেছে নিন। ডেস্কটপে ফাইল ডাউনলোড হয়ে যাবে, তারপর WhatsApp Web-এ অ্যাটাচ করে দিন।</p>
 
     <div class="paper" id="paper">
       <div class="doc-head">
@@ -551,12 +549,7 @@
 
         <!--
           ==== লোগো বসানোর জায়গা (SAMPLE) ====
-          নিচের <svg> ব্লকটা একটা প্লেসহোল্ডার সীল/লোগো।
-          নিজের লোগো বসাতে চাইলে পুরো <svg>...</svg> ব্লকটা মুছে
-          এভাবে একটা <img> ট্যাগ বসান:
-
-          <img src="your-logo.png" alt="লোগো"
-               style="width:72px;height:72px;object-fit:contain;">
+          নিজের লোগো বসাতে এই <img> ট্যাগের src পরিবর্তন করুন।
         -->
         <div class="seal">
           <img src="/assests/logo.png" alt="লোগো">
@@ -606,7 +599,7 @@
 
         <div class="qline"><div class="qnum">১১।</div><div class="qtext">পরিবারের সদস্যদের বিবরণঃ</div></div>
         <table class="fam-table">
-          <thead><tr><th style="width:36px;">ক্রঃনং</th><th>নাম</th><th style="width:60px;">বয়স</th><th>পেশা</th><th style="width:120px;">মোবাইল নম্বর</th></tr></thead>
+          <thead><tr><th style="width:32px;">ক্রঃনং</th><th>নাম</th><th style="width:46px;">বয়স</th><th>সম্পর্ক</th><th>পেশা</th><th style="width:105px;">মোবাইল নম্বর</th></tr></thead>
           <tbody id="p_famBody"></tbody>
         </table>
 
@@ -667,14 +660,67 @@
   </div>
 </div>
 
+<!-- ===================== SYNC SETTINGS OVERLAY (PIN protected) ===================== -->
+<div class="overlay" id="syncOverlay">
+  <div class="overlay-inner" style="max-width:540px;">
+    <div class="overlay-toolbar">
+      <h2 style="font-family:'Tiro Bangla',serif;font-weight:400;color:#2A2E23;margin:0;">☁️ ডিভাইস সিঙ্ক সেটিংস</h2>
+      <button class="close-x" id="closeSync" type="button">✕ বন্ধ করুন</button>
+    </div>
+
+    <!-- first-time: create a PIN -->
+    <div class="card" id="syncSetupView" style="display:none;">
+      <div class="card-sub" style="margin-left:0;margin-top:0;">
+        এই সেটিংস অন্য কেউ যাতে খুলতে/বদলাতে না পারে, তার জন্য একটা ৪-৬ সংখ্যার PIN সেট করুন। এই PIN শুধু আপনার এই ব্রাউজারে মনে রাখা হবে।
+      </div>
+      <div class="field"><label>নতুন PIN</label><input type="password" inputmode="numeric" id="pinNewInput" placeholder="৪-৬ ডিজিট"></div>
+      <div class="field"><label>PIN আবার লিখুন</label><input type="password" inputmode="numeric" id="pinNewConfirm" placeholder="আবার লিখুন"></div>
+      <div class="btnbar" style="margin-top:12px;">
+        <button class="btn btn-accent btn-sm" id="pinSetBtn" type="button">🔒 PIN সেট করুন</button>
+        <button class="btn btn-outline btn-sm" id="pinSkipBtn" type="button">PIN ছাড়াই রাখুন</button>
+      </div>
+      <p id="pinSetupStatus" class="hint-note" style="margin-top:10px;"></p>
+    </div>
+
+    <!-- locked: ask for PIN -->
+    <div class="card" id="syncLockView" style="display:none;">
+      <div class="card-sub" style="margin-left:0;margin-top:0;">🔒 এই সেটিংস PIN দিয়ে সুরক্ষিত। চালিয়ে যেতে আপনার PIN দিন।</div>
+      <div class="field"><label>PIN</label><input type="password" inputmode="numeric" id="pinUnlockInput" placeholder="আপনার PIN"></div>
+      <div class="btnbar" style="margin-top:12px;">
+        <button class="btn btn-accent btn-sm" id="pinUnlockBtn" type="button">আনলক করুন</button>
+      </div>
+      <p id="pinUnlockStatus" class="hint-note" style="margin-top:10px;"></p>
+      <p class="hint-note" style="margin-top:14px;">PIN ভুলে গেলে <button type="button" id="pinForgotBtn" style="background:none;border:none;padding:0;color:var(--danger);text-decoration:underline;cursor:pointer;font-size:inherit;">এখানে ক্লিক করে রিসেট করুন</button> (এতে সংরক্ষিত সিঙ্ক URL/কী মুছে যাবে, আবার নতুন করে বসাতে হবে)।</p>
+    </div>
+
+    <!-- unlocked: actual settings -->
+    <div class="card" id="syncSettingsView" style="display:none;">
+      <div class="card-sub" style="margin-left:0;margin-top:0;">
+        সব ডিভাইসে একই সংরক্ষিত ফর্মের তালিকা দেখতে চাইলে একটা ফ্রি Google Sheet + Apps Script Web App বানিয়ে তার লিংক ও গোপন কী এখানে বসান। সেটআপ গাইড চ্যাটে দেওয়া হয়েছে।
+      </div>
+      <div class="field"><label>Web App URL</label><input type="text" id="syncUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec"></div>
+      <div class="field"><label>সিক্রেট কী</label><input type="text" id="syncKeyInput" placeholder="আপনার গোপন কী"></div>
+      <div class="btnbar" style="margin-top:12px;">
+        <button class="btn btn-accent btn-sm" id="saveSyncBtn" type="button">💾 সেভ ও কানেক্ট করুন</button>
+        <button class="btn btn-danger btn-sm" id="disableSyncBtn" type="button">সিঙ্ক বন্ধ করুন</button>
+      </div>
+      <p id="syncStatus" class="hint-note" style="margin-top:10px;"></p>
+      <div class="btnbar" style="margin-top:16px;border-top:1px solid var(--card-border);padding-top:14px;">
+        <button class="btn btn-outline btn-sm" id="pinLockNowBtn" type="button">🔒 এখনই লক করুন</button>
+        <button class="btn btn-outline btn-sm" id="pinChangeBtn" type="button">PIN পরিবর্তন করুন</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   const form = document.getElementById('theForm');
   const fields = form.querySelectorAll('[data-key]');
   const FIELD_KEYS = Array.from(fields).map(f=>f.dataset.key);
   const DATE_KEYS = new Set(['dob','formDate']);
-  const DRAFT_KEY = 'tf_draft_v2';
-  const SAVED_KEY = 'tf_saved_forms_v2';
+  const DRAFT_KEY = 'tf_draft_v3';
+  const SAVED_KEY = 'tf_saved_forms_v3';
   const body = document.body;
 
   let currentPhotoDataUrl = null;
@@ -693,6 +739,7 @@
     row.innerHTML =
       '<input type="text" placeholder="নাম" data-f="name">' +
       '<input type="text" placeholder="বয়স" data-f="age">' +
+      '<input type="text" placeholder="সম্পর্ক" data-f="relation">' +
       '<input type="text" placeholder="পেশা" data-f="occ">' +
       '<input type="text" placeholder="মোবাইল" data-f="mob">' +
       '<button type="button" class="fam-remove" title="মুছে ফেলুন">×</button>';
@@ -700,6 +747,7 @@
     if(vals){
       row.querySelector('[data-f=name]').value = vals.name || '';
       row.querySelector('[data-f=age]').value = vals.age || '';
+      row.querySelector('[data-f=relation]').value = vals.relation || '';
       row.querySelector('[data-f=occ]').value = vals.occ || '';
       row.querySelector('[data-f=mob]').value = vals.mob || '';
     }
@@ -710,6 +758,7 @@
     return Array.from(famRows.querySelectorAll('.fam-row')).map(row=>({
       name: row.querySelector('[data-f=name]').value,
       age: row.querySelector('[data-f=age]').value,
+      relation: row.querySelector('[data-f=relation]').value,
       occ: row.querySelector('[data-f=occ]').value,
       mob: row.querySelector('[data-f=mob]').value,
     }));
@@ -732,7 +781,7 @@
     reader.readAsDataURL(file);
   });
 
-  /* ================= SIGNATURE PAD ================= */
+  /* ================= SIGNATURE PAD (draw + camera + gallery) ================= */
   const sigCanvas = document.getElementById('sigCanvas');
   const sigCtx = sigCanvas.getContext('2d');
   let drawing = false, lastX = 0, lastY = 0;
@@ -767,10 +816,8 @@
     currentSignatureDataUrl = null;
     onLiveInput();
   });
-  const sigCameraInput = document.getElementById('sigCameraInput');
-  document.getElementById('sigCameraBtn').addEventListener('click', ()=>sigCameraInput.click());
-  sigCameraInput.addEventListener('change', ()=>{
-    const file = sigCameraInput.files[0];
+
+  function handleSigImageFile(file){
     if(!file) return;
     const reader = new FileReader();
     reader.onload = e=>{
@@ -786,7 +833,14 @@
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-  });
+  }
+  const sigCameraInput = document.getElementById('sigCameraInput');
+  const sigGalleryInput = document.getElementById('sigGalleryInput');
+  document.getElementById('sigCameraBtn').addEventListener('click', ()=>sigCameraInput.click());
+  document.getElementById('sigGalleryBtn').addEventListener('click', ()=>sigGalleryInput.click());
+  sigCameraInput.addEventListener('change', ()=>{ handleSigImageFile(sigCameraInput.files[0]); sigCameraInput.value=''; });
+  sigGalleryInput.addEventListener('change', ()=>{ handleSigImageFile(sigGalleryInput.files[0]); sigGalleryInput.value=''; });
+
   function loadSignatureIntoCanvas(dataUrl){
     sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
     if(!dataUrl) return;
@@ -798,6 +852,17 @@
       sigCtx.drawImage(img, x, y, w, h);
     };
     img.src = dataUrl;
+  }
+
+  /* ================= ADDRESS COMPOSITION ================= */
+  function composePermAddr(data){
+    const parts = [];
+    if(data.permHolding) parts.push('বাসা/হোল্ডিংঃ ' + data.permHolding);
+    if(data.permVillageRoad) parts.push('গ্রাম/রাস্তাঃ ' + data.permVillageRoad);
+    if(data.permPostOffice) parts.push('ডাকঘরঃ ' + data.permPostOffice);
+    if(data.permThana) parts.push('থানাঃ ' + data.permThana);
+    if(data.permDistrict) parts.push('জেলাঃ ' + data.permDistrict);
+    return parts.join(', ');
   }
 
   /* ================= DATA COLLECT / FILL ================= */
@@ -861,13 +926,14 @@
     body_.innerHTML = '';
     (arr||[]).forEach((r,i)=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+toBn(i+1)+'।</td><td>'+(r.name||'\u00A0')+'</td><td>'+(r.age||'\u00A0')+'</td><td>'+(r.occ||'\u00A0')+'</td><td>'+(r.mob||'\u00A0')+'</td>';
+      tr.innerHTML = '<td>'+toBn(i+1)+'।</td><td>'+(r.name||'\u00A0')+'</td><td>'+(r.age||'\u00A0')+'</td><td>'+(r.relation||'\u00A0')+'</td><td>'+(r.occ||'\u00A0')+'</td><td>'+(r.mob||'\u00A0')+'</td>';
       body_.appendChild(tr);
     });
   }
   function paintPreview(data){
     data = data || {};
     FIELD_KEYS.forEach(key=> renderVal(key, data[key], DATE_KEYS.has(key)));
+    renderVal('permAddr', composePermAddr(data), false);
     const dateEl = document.getElementById('p_formDate');
     if(data.formDate){
       const d = new Date(data.formDate);
@@ -900,12 +966,213 @@
     }catch(e){}
   }
 
-  /* ================= SAVED FORMS (CRUD) ================= */
+  /* ================= SAVED FORMS (CRUD, local cache) ================= */
   function getSavedForms(){ try{ return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; }catch(e){ return []; } }
   function setSavedForms(list){
     localStorage.setItem(SAVED_KEY, JSON.stringify(list));
     document.getElementById('savedCount').textContent = toBn(list.length);
   }
+
+  /* ================= OPTIONAL CROSS-DEVICE SYNC (Google Sheets Web App) ================= */
+  const SYNC_URL_KEY = 'tf_sync_url';
+  const SYNC_SECRET_KEY = 'tf_sync_secret';
+  function getSyncConfig(){ return { url: localStorage.getItem(SYNC_URL_KEY) || '', key: localStorage.getItem(SYNC_SECRET_KEY) || '' }; }
+  function isSyncEnabled(){ const c = getSyncConfig(); return !!(c.url && c.key); }
+
+  async function apiCall(action, payload){
+    const c = getSyncConfig();
+    if(!c.url || !c.key) throw new Error('sync-not-configured');
+    const body = Object.assign({ action, key: c.key }, payload || {});
+    // text/plain avoids a CORS preflight that Apps Script Web Apps don't handle
+    const res = await fetch(c.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+    const json = await res.json();
+    if(json.error) throw new Error(json.error);
+    return json;
+  }
+  // Small helper: shrink big base64 images before they go into a Sheet cell (~50k char/cell limit)
+  function compressDataUrl(dataUrl, maxDim, quality){
+    return new Promise((resolve)=>{
+      if(!dataUrl){ resolve(dataUrl); return; }
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        const scale = Math.min(1, maxDim / Math.max(w,h));
+        w = Math.round(w*scale); h = Math.round(h*scale);
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality || 0.7));
+      };
+      img.onerror = ()=> resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+  async function shrinkItemImages(item){
+    const d = Object.assign({}, item.data);
+    if(d.photo) d.photo = await compressDataUrl(d.photo, 500, 0.7);
+    if(d.signature) d.signature = await compressDataUrl(d.signature, 500, 0.7);
+    return Object.assign({}, item, { data: d });
+  }
+
+  function setSyncStatus(msg, isError){
+    const el = document.getElementById('syncStatus');
+    if(!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--danger)' : 'var(--green-dark)';
+  }
+  function refreshSyncPanel(){
+    const c = getSyncConfig();
+    document.getElementById('syncUrlInput').value = c.url;
+    document.getElementById('syncKeyInput').value = c.key;
+    setSyncStatus(isSyncEnabled() ? '✅ সিঙ্ক চালু আছে — সব ডিভাইসে একই তালিকা দেখাবে।' : 'সিঙ্ক বন্ধ আছে — শুধু এই ডিভাইসেই ফর্মগুলো সংরক্ষিত থাকবে।', false);
+  }
+
+  /* ---- PIN lock for the sync settings panel (deters casual snooping on a shared device;
+     NOTE: this is client-side only — someone using browser devtools could still bypass it) ---- */
+  const PIN_HASH_KEY = 'tf_sync_pin_hash';
+  const PIN_SALT_KEY = 'tf_sync_pin_salt';
+  const PIN_SESSION_KEY = 'tf_sync_unlocked';
+  async function sha256Hex(text){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function isPinSet(){ return !!localStorage.getItem(PIN_HASH_KEY); }
+  function isUnlockedThisSession(){ return sessionStorage.getItem(PIN_SESSION_KEY) === '1'; }
+  async function setPin(pin){
+    const salt = 'tf-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const hash = await sha256Hex(salt + pin);
+    localStorage.setItem(PIN_SALT_KEY, salt);
+    localStorage.setItem(PIN_HASH_KEY, hash);
+    sessionStorage.setItem(PIN_SESSION_KEY, '1');
+  }
+  async function checkPin(pin){
+    const salt = localStorage.getItem(PIN_SALT_KEY) || '';
+    const hash = await sha256Hex(salt + pin);
+    return hash === localStorage.getItem(PIN_HASH_KEY);
+  }
+  function clearPin(){
+    localStorage.removeItem(PIN_HASH_KEY);
+    localStorage.removeItem(PIN_SALT_KEY);
+    sessionStorage.removeItem(PIN_SESSION_KEY);
+  }
+  function showSyncView(name){
+    ['syncSetupView','syncLockView','syncSettingsView'].forEach(id=>{
+      document.getElementById(id).style.display = (id === name) ? 'block' : 'none';
+    });
+  }
+  function openSyncOverlay(){
+    body.classList.add('sync-open');
+    if(!isPinSet()){
+      document.getElementById('pinSetupStatus').textContent = '';
+      document.getElementById('pinNewInput').value = '';
+      document.getElementById('pinNewConfirm').value = '';
+      showSyncView('syncSetupView');
+    } else if(!isUnlockedThisSession()){
+      document.getElementById('pinUnlockStatus').textContent = '';
+      document.getElementById('pinUnlockInput').value = '';
+      showSyncView('syncLockView');
+    } else {
+      refreshSyncPanel();
+      showSyncView('syncSettingsView');
+    }
+  }
+  document.getElementById('pinSetBtn').addEventListener('click', async ()=>{
+    const p1 = document.getElementById('pinNewInput').value.trim();
+    const p2 = document.getElementById('pinNewConfirm').value.trim();
+    const statusEl = document.getElementById('pinSetupStatus');
+    if(p1.length < 4 || p1.length > 6 || !/^\d+$/.test(p1)){ statusEl.textContent = '৪-৬ সংখ্যার PIN দিন।'; statusEl.style.color='var(--danger)'; return; }
+    if(p1 !== p2){ statusEl.textContent = 'দুটো PIN মিলছে না।'; statusEl.style.color='var(--danger)'; return; }
+    await setPin(p1);
+    refreshSyncPanel();
+    showSyncView('syncSettingsView');
+  });
+  document.getElementById('pinSkipBtn').addEventListener('click', ()=>{
+    sessionStorage.setItem(PIN_SESSION_KEY, '1'); // treated as unlocked for this session without a PIN
+    refreshSyncPanel();
+    showSyncView('syncSettingsView');
+  });
+  document.getElementById('pinUnlockBtn').addEventListener('click', async ()=>{
+    const p = document.getElementById('pinUnlockInput').value.trim();
+    const ok = await checkPin(p);
+    if(ok){
+      sessionStorage.setItem(PIN_SESSION_KEY, '1');
+      refreshSyncPanel();
+      showSyncView('syncSettingsView');
+    } else {
+      const el = document.getElementById('pinUnlockStatus');
+      el.textContent = '❌ ভুল PIN।';
+      el.style.color = 'var(--danger)';
+    }
+  });
+  document.getElementById('pinForgotBtn').addEventListener('click', ()=>{
+    if(!confirm('PIN রিসেট করলে সংরক্ষিত সিঙ্ক URL ও কী মুছে যাবে (সংরক্ষিত ফর্মগুলো মুছবে না)। এগিয়ে যাবেন?')) return;
+    clearPin();
+    localStorage.removeItem(SYNC_URL_KEY);
+    localStorage.removeItem(SYNC_SECRET_KEY);
+    showSyncView('syncSetupView');
+    document.getElementById('pinSetupStatus').textContent = '';
+  });
+  document.getElementById('pinLockNowBtn').addEventListener('click', ()=>{
+    sessionStorage.removeItem(PIN_SESSION_KEY);
+    body.classList.remove('sync-open');
+  });
+  document.getElementById('pinChangeBtn').addEventListener('click', ()=>{
+    document.getElementById('pinSetupStatus').textContent = 'নতুন PIN সেট করুন — আগেরটা বদলে যাবে।';
+    document.getElementById('pinSetupStatus').style.color = 'var(--green-dark)';
+    document.getElementById('pinNewInput').value = '';
+    document.getElementById('pinNewConfirm').value = '';
+    showSyncView('syncSetupView');
+  });
+
+  document.getElementById('syncSettingsBtn').addEventListener('click', openSyncOverlay);
+  document.getElementById('closeSync').addEventListener('click', ()=> body.classList.remove('sync-open'));
+  document.getElementById('syncOverlay').addEventListener('click', (e)=>{ if(e.target.id==='syncOverlay') body.classList.remove('sync-open'); });
+  document.getElementById('saveSyncBtn').addEventListener('click', async ()=>{
+    const url = document.getElementById('syncUrlInput').value.trim();
+    const key = document.getElementById('syncKeyInput').value.trim();
+    if(!url || !key){ setSyncStatus('URL এবং সিক্রেট কী দুটোই দিতে হবে।', true); return; }
+    localStorage.setItem(SYNC_URL_KEY, url);
+    localStorage.setItem(SYNC_SECRET_KEY, key);
+    setSyncStatus('⏳ কানেকশন যাচাই করা হচ্ছে...', false);
+    try{
+      const remote = await fetchSavedFormsRemote();
+      setSavedForms(remote);
+      setSyncStatus('✅ কানেক্ট হয়েছে! ' + toBn(remote.length) + 'টা ফর্ম পাওয়া গেছে।', false);
+    }catch(err){
+      console.error(err);
+      setSyncStatus('❌ কানেক্ট করা যায়নি: URL/কী চেক করুন। (' + err.message + ')', true);
+    }
+  });
+  document.getElementById('disableSyncBtn').addEventListener('click', ()=>{
+    localStorage.removeItem(SYNC_URL_KEY);
+    localStorage.removeItem(SYNC_SECRET_KEY);
+    refreshSyncPanel();
+  });
+
+  async function fetchSavedFormsRemote(){
+    const json = await apiCall('list');
+    return json.items || [];
+  }
+  async function saveSavedFormRemote(item){
+    const slim = await shrinkItemImages(item);
+    await apiCall('save', { item: slim });
+  }
+  async function deleteSavedFormRemote(id){
+    await apiCall('delete', { id });
+  }
+  // Local cache is shown immediately; if sync is configured we refresh from
+  // the shared sheet in the background and re-render once it arrives.
+  async function refreshSavedList(){
+    if(!isSyncEnabled()) return getSavedForms();
+    try{
+      const remote = await fetchSavedFormsRemote();
+      setSavedForms(remote);
+      return remote;
+    }catch(err){
+      console.error(err);
+      return getSavedForms();
+    }
+  }
+
   function updateEditBanner(){
     const banner = document.getElementById('editBanner');
     if(currentEditingId){
@@ -923,8 +1190,10 @@
     resetFormState();
   });
 
-  document.getElementById('saveFormBtn').addEventListener('click', ()=>{
+  document.getElementById('saveFormBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('saveFormBtn');
     const list = getSavedForms();
+    let item;
     if(currentEditingId){
       const idx = list.findIndex(x=>x.id===currentEditingId);
       if(idx > -1){
@@ -933,25 +1202,36 @@
         list[idx].label = newLabel || list[idx].label;
         list[idx].data = collectData();
         list[idx].savedAt = new Date().toISOString();
+        item = list[idx];
         setSavedForms(list);
-        alert('পরিবর্তন সংরক্ষণ করা হয়েছে।');
-        return;
       }
     }
-    const suggested = (form.querySelector('[data-key=name]').value) || 'ফর্ম';
-    const label = prompt('এই ফর্মটির নাম দিন (যেমন ভাড়াটিয়ার নাম):', suggested);
-    if(label === null) return;
-    const item = { id:'f'+Date.now(), label: label || suggested, savedAt: new Date().toISOString(), data: collectData() };
-    list.unshift(item);
-    setSavedForms(list);
-    currentEditingId = item.id;
-    updateEditBanner();
+    if(!item){
+      const suggested = (form.querySelector('[data-key=name]').value) || 'ফর্ম';
+      const label = prompt('এই ফর্মটির নাম দিন (যেমন ভাড়াটিয়ার নাম):', suggested);
+      if(label === null) return;
+      item = { id:'f'+Date.now(), label: label || suggested, savedAt: new Date().toISOString(), data: collectData() };
+      list.unshift(item);
+      setSavedForms(list);
+      currentEditingId = item.id;
+      updateEditBanner();
+    }
+    if(isSyncEnabled()){
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '☁️ সিঙ্ক হচ্ছে...';
+      try{ await saveSavedFormRemote(item); }
+      catch(err){ console.error(err); alert('ফর্মটি এই ডিভাইসে সেভ হয়েছে, কিন্তু অন্য ডিভাইসে সিঙ্ক করতে সমস্যা হয়েছে: ' + err.message); }
+      finally{ btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
     alert('ফর্মটি সংরক্ষণ করা হয়েছে।');
   });
 
-  function renderSavedList(){
+  async function renderSavedList(){
     const wrap = document.getElementById('savedList');
-    const list = getSavedForms();
+    wrap.innerHTML = isSyncEnabled()
+      ? '<div class="empty-state">☁️ সব ডিভাইস থেকে তথ্য আনা হচ্ছে...</div>'
+      : '<div class="empty-state">লোড হচ্ছে...</div>';
+    const list = await refreshSavedList();
     if(!list.length){
       wrap.innerHTML = '<div class="empty-state">এখনও কোনো ফর্ম সংরক্ষণ করা হয়নি। ফর্ম পূরণের পর "এই ফর্ম সংরক্ষণ করুন" বাটনে ক্লিক করুন।</div>';
       return;
@@ -968,7 +1248,7 @@
           '<button class="btn btn-primary btn-sm" data-act="view">👁 দেখুন</button>' +
           '<button class="btn btn-outline btn-sm" data-act="edit">✏️ আপডেট</button>' +
           '<button class="btn btn-outline btn-sm" data-act="print">🖨 প্রিন্ট</button>' +
-          '<button class="btn btn-whatsapp btn-sm" data-act="whatsapp">WhatsApp</button>' +
+          '<button class="btn btn-whatsapp btn-sm" data-act="share">📤 শেয়ার</button>' +
           '<button class="btn btn-danger btn-sm" data-act="delete">🗑 মুছুন</button>' +
         '</div>';
       card.querySelector('[data-act=view]').addEventListener('click', ()=> openPreviewForItem(item));
@@ -983,14 +1263,15 @@
         openPreviewForItem(item);
         printFromOverlay();
       });
-      card.querySelector('[data-act=whatsapp]').addEventListener('click', ()=>{
-        const text = encodeURIComponent(buildSummaryText(item.data));
-        window.open('https://wa.me/?text=' + text, '_blank');
-      });
-      card.querySelector('[data-act=delete]').addEventListener('click', ()=>{
+      card.querySelector('[data-act=share]').addEventListener('click', ()=> openPreviewForItem(item));
+      card.querySelector('[data-act=delete]').addEventListener('click', async ()=>{
         if(!confirm('এই সংরক্ষিত ফর্মটি মুছে ফেলতে চান?')) return;
         setSavedForms(getSavedForms().filter(x=>x.id !== item.id));
         if(currentEditingId === item.id){ currentEditingId = null; updateEditBanner(); }
+        if(isSyncEnabled()){
+          try{ await deleteSavedFormRemote(item.id); }
+          catch(err){ console.error(err); alert('এই ডিভাইস থেকে মুছে ফেলা হয়েছে, কিন্তু অন্য ডিভাইসে মুছতে সমস্যা হয়েছে: ' + err.message); }
+        }
         renderSavedList();
       });
       wrap.appendChild(card);
@@ -998,6 +1279,7 @@
   }
   document.getElementById('savedListBtn').addEventListener('click', ()=>{ renderSavedList(); body.classList.add('saved-open'); });
   document.getElementById('closeSaved').addEventListener('click', ()=> body.classList.remove('saved-open'));
+
 
   /* ================= PREVIEW OVERLAY CONTROL ================= */
   function updateContextLabel(){
@@ -1016,7 +1298,7 @@
     paintPreview(collectData());
     updateContextLabel();
     body.classList.add('preview-open');
-    fitPaperToPage();
+    resetPaperScale();
   }
   function openPreviewForItem(item){
     viewingSavedItem = item;
@@ -1024,10 +1306,10 @@
     updateContextLabel();
     body.classList.remove('saved-open');
     body.classList.add('preview-open');
-    fitPaperToPage();
+    resetPaperScale();
   }
   document.getElementById('previewBtn').addEventListener('click', openPreviewLive);
-  document.getElementById('closePreview').addEventListener('click', ()=> body.classList.remove('preview-open'));
+  document.getElementById('closePreview').addEventListener('click', ()=>{ body.classList.remove('preview-open'); resetPaperScale(); });
   document.getElementById('editFromPreviewBtn').addEventListener('click', ()=>{
     if(!viewingSavedItem) return;
     const item = viewingSavedItem;
@@ -1037,11 +1319,11 @@
     body.classList.remove('preview-open');
     window.scrollTo({top:0, behavior:'smooth'});
   });
-  document.getElementById('previewOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'previewOverlay') body.classList.remove('preview-open'); });
+  document.getElementById('previewOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'previewOverlay'){ body.classList.remove('preview-open'); resetPaperScale(); } });
   document.getElementById('savedOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'savedOverlay') body.classList.remove('saved-open'); });
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ body.classList.remove('preview-open'); body.classList.remove('saved-open'); } });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ body.classList.remove('preview-open'); body.classList.remove('saved-open'); body.classList.remove('sync-open'); resetPaperScale(); } });
 
-  /* ================= PRINT: FIT TO ONE PAGE (A4 / LEGAL) ================= */
+  /* ================= PRINT: FILL THE WHOLE PAGE (A4 / LEGAL), ONE PAGE ONLY ================= */
   const PAGE_SIZES = { a4:{w:210,h:297}, legal:{w:215.9,h:355.6} };
   const MM_TO_PX = 3.7795275591;
   function mm2px(mm){ return mm*MM_TO_PX; }
@@ -1050,55 +1332,114 @@
     if(!styleTag){ styleTag = document.createElement('style'); styleTag.id = 'dynPageSize'; document.head.appendChild(styleTag); }
     styleTag.textContent = '@page { size: ' + (key === 'legal' ? 'legal' : 'A4') + '; margin:0; }';
   }
+  function resetPaperScale(){
+    document.getElementById('paper').style.setProperty('--s', 1);
+  }
+  // Continuously grows/shrinks real font-size, spacing, image sizes (not a visual
+  // transform) so the document always fills the chosen page edge-to-edge, on
+  // exactly one page. Uses real layout changes so print pagination respects it.
   function fitPaperToPage(){
     const key = document.getElementById('paperSizeSelect').value;
     applyPageSizeStyle(key);
     const page = PAGE_SIZES[key] || PAGE_SIZES.a4;
-    const availableHeightPx = mm2px(page.h - 28); // ~14mm top+bottom padding baseline
+    const availableHeightPx = mm2px(page.h) - mm2px(28); // reserve ~14mm top+bottom
     const paperEl = document.getElementById('paper');
-    paperEl.classList.remove('compact-1','compact-2','compact-3');
-    const steps = ['compact-1','compact-2','compact-3'];
-    let i = 0;
-    while(paperEl.scrollHeight > availableHeightPx && i < steps.length){
-      paperEl.classList.add(steps[i]);
-      i++;
+
+    let s = 1;
+    paperEl.style.setProperty('--s', s);
+    for(let iter = 0; iter < 8; iter++){
+      const h = paperEl.scrollHeight;
+      if(h <= 0) break;
+      let next = s * (availableHeightPx / h);
+      next = Math.max(0.45, Math.min(next, 1.9)); // keep text from getting unreadably small or huge
+      if(Math.abs(next - s) < 0.006){ s = next; break; }
+      s = next;
+      paperEl.style.setProperty('--s', s);
     }
+    paperEl.style.setProperty('--s', s);
   }
   document.getElementById('paperSizeSelect').addEventListener('change', fitPaperToPage);
   function printFromOverlay(){ fitPaperToPage(); setTimeout(()=>window.print(), 70); }
   document.getElementById('printBtn').addEventListener('click', printFromOverlay);
-
-  /* ================= WHATSAPP ================= */
-  function fmtDate(v){ if(!v) return ''; const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString('bn-BD',{year:'numeric',month:'long',day:'numeric'}); }
-  function buildSummaryText(data){
-    data = data || collectData();
-    function g(k){ return data[k] || ''; }
-    const lines = [];
-    lines.push('*অস্থায়ী ভাড়াটিয়া চুক্তিপত্র*');
-    lines.push('');
-    lines.push('নাম: ' + (g('name') || '-'));
-    lines.push('পিতার নাম: ' + (g('fatherName') || '-'));
-    lines.push('জন্ম তারিখ: ' + (fmtDate(g('dob')) || '-'));
-    lines.push('মোবাইল: ' + (g('mobile') || '-'));
-    lines.push('NID: ' + (g('nid') || '-'));
-    lines.push('স্থায়ী ঠিকানা: ' + (g('permAddr') || '-'));
-    const addr = [g('flat'),g('holding'),g('road'),g('area'),g('thana')].filter(Boolean).join(', ');
-    lines.push('বর্তমান ঠিকানা: ' + (addr || '-'));
-    const fam = (data.family||[]).filter(r=>r.name);
-    if(fam.length){
-      lines.push('');
-      lines.push('পরিবারের সদস্য:');
-      fam.forEach((r,i)=> lines.push((i+1)+'. '+r.name+(r.age?' ('+r.age+' বছর)':'')+(r.occ?' — '+r.occ:'')));
+  async function openPrintablePdf(){
+    const btn = document.getElementById('printBtn');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '⏳ তৈরি হচ্ছে...';
+    try{
+      const blob = await buildPdfBlob();
+      const url = URL.createObjectURL(blob);
+      const opened = window.open(url, '_blank');
+      if(!opened){
+        const a = document.createElement('a'); a.href = url; a.download = 'tenant-form.pdf';
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      setTimeout(()=>URL.revokeObjectURL(url), 30000);
+    } catch(err){
+      console.error(err);
+      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      btn.disabled = false; btn.innerHTML = originalHtml;
     }
-    lines.push('');
-    lines.push('তারিখ: ' + (fmtDate(g('formDate')) || '-'));
-    lines.push('');
-    lines.push('(সম্পূর্ণ ফর্মের প্রিন্ট/PDF কপি আলাদাভাবে পাঠানো হবে)');
-    return lines.join('\n');
   }
-  document.getElementById('whatsappBtn').addEventListener('click', ()=>{
-    const data = viewingSavedItem ? viewingSavedItem.data : collectData();
-    window.open('https://wa.me/?text=' + encodeURIComponent(buildSummaryText(data)), '_blank');
+  window.addEventListener('beforeprint', fitPaperToPage);
+  window.addEventListener('afterprint', resetPaperScale);
+
+  /* ================= SHARE AS JPG / PDF (WhatsApp via Web Share API) ================= */
+  async function renderPaperCanvas(){
+    fitPaperToPage(); // same full-page fill look as print
+    await new Promise(r=>setTimeout(r, 60));
+    const paperEl = document.getElementById('paper');
+    return html2canvas(paperEl, {scale:2, backgroundColor:'#FBF8F1', useCORS:true});
+  }
+  async function buildJpgBlob(){
+    const canvas = await renderPaperCanvas();
+    return new Promise(resolve=> canvas.toBlob(b=>resolve(b), 'image/jpeg', 0.92));
+  }
+  async function buildPdfBlob(){
+    const canvas = await renderPaperCanvas();
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const key = document.getElementById('paperSizeSelect').value;
+    const size = key === 'legal' ? [215.9,355.6] : [210,297];
+    const pdf = new window.jspdf.jsPDF({unit:'mm', format:size});
+    const pageW = size[0], pageH = size[1];
+    const ratio = canvas.width / canvas.height;
+    let w = pageW, h = w/ratio;
+    if(h > pageH){ h = pageH; w = h*ratio; }
+    const x = (pageW-w)/2, y = (pageH-h)/2;
+    pdf.addImage(imgData, 'JPEG', x, y, w, h);
+    return pdf.output('blob');
+  }
+  async function shareFile(blob, filename, mime, btnEl){
+    const originalHtml = btnEl ? btnEl.innerHTML : null;
+    if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '⏳ তৈরি হচ্ছে...'; }
+    try{
+      const file = new File([blob], filename, {type: mime});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:'অস্থায়ী ভাড়াটিয়া চুক্তিপত্র', text:'অস্থায়ী ভাড়াটিয়া চুক্তিপত্র'});
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url), 5000);
+        alert('ফাইলটি ডাউনলোড হয়েছে। এখন WhatsApp Web/অ্যাপ খুলে চ্যাটে ফাইলটি অ্যাটাচ করে পাঠান।');
+        window.open('https://web.whatsapp.com/', '_blank');
+      }
+    } catch(err){
+      if(err && err.name !== 'AbortError'){
+        console.error(err);
+        alert('ফাইল তৈরি/শেয়ার করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      }
+    } finally {
+      if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = originalHtml; }
+    }
+  }
+  document.getElementById('whatsappJpgBtn').addEventListener('click', async (e)=>{
+    const blob = await buildJpgBlob();
+    shareFile(blob, 'tenant-form.jpg', 'image/jpeg', e.currentTarget);
+  });
+  document.getElementById('whatsappPdfBtn').addEventListener('click', async (e)=>{
+    const blob = await buildPdfBlob();
+    shareFile(blob, 'tenant-form.pdf', 'application/pdf', e.currentTarget);
   });
 
   /* ================= RESET ================= */
@@ -1113,6 +1454,7 @@
   if(!famRows.children.length){ addFamRow(); addFamRow(); addFamRow(); }
   updateEditBanner();
   paintPreview(collectData());
+  if(isSyncEnabled()){ refreshSavedList().catch(()=>{}); } // quiet background refresh of the badge count
 })();
 </script>
 

@@ -2,281 +2,318 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#123D27">
 <title>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র — ফর্ম বিল্ডার</title>
 <link rel="icon" type="image/png" href="/assests/logo2.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --paper:#FBF8F1;
     --paper-edge:#EDE7D6;
-    --ink:#20241C;
+    --ink:#1D2219;
     --ink-soft:#5B6152;
+    --ink-mute:#8A8F7F;
     --green:#1F6B45;
-    --green-dark:#123D27;
+    --green-dark:#0F3522;
     --green-light:#2E8B57;
+    --green-tint:#EAF5EE;
     --gold:#E7C567;
     --gold-dark:#C99A2E;
-    --maroon:#8C2F39;
-    --line:#C9C2AA;
-    --bg:#F3F1E9;
-    --card-border:#E7E2CF;
+    --line:#E4DFCB;
+    --bg:#F1F3EC;
+    --surface:#FFFFFF;
     --focus:#2E8B57;
     --danger:#B23A48;
+    --danger-tint:#FCEFF0;
     --whatsapp:#25D366;
     --whatsapp-dark:#128C4A;
+    --radius:16px;
+    --shadow-sm:0 1px 2px rgba(16,32,20,.06),0 1px 3px rgba(16,32,20,.05);
+    --shadow-md:0 4px 14px rgba(16,32,20,.08),0 2px 4px rgba(16,32,20,.04);
+    --shadow-lg:0 18px 44px rgba(10,24,14,.28);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--bg);
+    background:
+      radial-gradient(900px 400px at 85% -120px,rgba(46,139,87,.13),transparent 70%),
+      radial-gradient(700px 360px at -10% 0,rgba(231,197,103,.14),transparent 70%),
+      var(--bg);
+    background-attachment:fixed;
     color:var(--ink);
-    font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;
+    font-family:'Noto Sans Bengali','Hind Siliguri',system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    min-height:100vh;
   }
+  body.preview-open,body.saved-open,body.sync-open{overflow:hidden;}
+  button,input,select,textarea{font-family:inherit;}
+
+  /* ===== icons ===== */
+  .ic{width:1.15em;height:1.15em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;}
+  .sprite{position:absolute;width:0;height:0;overflow:hidden;}
 
   /* ============ TOP BAR ============ */
   .topbar{
-    background:linear-gradient(120deg,var(--green-dark),var(--green) 65%,var(--green-light));
+    background:linear-gradient(115deg,var(--green-dark) 0%,var(--green) 60%,var(--green-light) 100%);
     color:#fff;
-    padding:16px 26px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
-    position:sticky;
-    top:0;
-    z-index:20;
-    box-shadow:0 3px 14px rgba(18,61,39,.25);
+    padding:14px clamp(14px,3vw,32px);
+    display:flex;align-items:center;justify-content:space-between;
+    gap:14px 20px;flex-wrap:wrap;
+    position:sticky;top:0;z-index:30;
+    box-shadow:0 6px 24px rgba(15,53,34,.28);
+    border-bottom:1px solid rgba(255,255,255,.1);
   }
-  .topbar .brand{display:flex;align-items:center;gap:12px;}
-  .topbar .brand svg{width:34px;height:34px;flex:0 0 auto;}
-  .topbar h1{
+  .topbar::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7;
+  }
+  .brand{display:flex;align-items:center;gap:13px;min-width:0;}
+  .brand-mark{
+    width:44px;height:44px;flex:0 0 44px;border-radius:13px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .brand-mark svg{width:30px;height:30px;}
+  .brand h1{
     font-family:'Tiro Bangla',serif;
-    font-size:20px;
-    margin:0;
-    font-weight:400;
-    letter-spacing:.2px;
+    font-size:clamp(16px,2.4vw,21px);
+    margin:0;font-weight:400;letter-spacing:.2px;line-height:1.25;
   }
-  .topbar p{margin:2px 0 0;font-size:12.5px;color:#D9EEDF;}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:#CFE8D8;}
+  .topbar .btnbar{flex-wrap:nowrap;}
 
   /* ============ BUTTONS ============ */
   .btn{
-    border:none;
-    border-radius:999px;
-    padding:11px 20px;
-    font-family:inherit;
-    font-size:13.5px;
-    font-weight:700;
+    border:none;border-radius:12px;
+    min-height:42px;padding:9px 18px;
+    font-size:14px;font-weight:700;letter-spacing:.1px;
     cursor:pointer;
-    transition:transform .14s ease, box-shadow .14s ease, filter .14s ease;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
     white-space:nowrap;
-    box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:transform .15s ease,box-shadow .15s ease,filter .15s ease,background .15s ease,border-color .15s ease;
+    box-shadow:var(--shadow-sm);
+    position:relative;
   }
-  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.16);}
-  .btn:active{transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,.12);}
-  .btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-  .btn-sm{padding:7px 13px;font-size:12px;border-radius:999px;}
-  .btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#17331F;}
-  .btn-accent{background:linear-gradient(135deg,var(--green-light),var(--green));color:#fff;}
+  .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);filter:brightness(1.04);}
+  .btn:active{transform:translateY(0) scale(.98);box-shadow:var(--shadow-sm);}
+  .btn:focus-visible,.close-x:focus-visible,.paper-size-select:focus-visible{outline:3px solid rgba(46,139,87,.4);outline-offset:2px;}
+  .btn:disabled{opacity:.6;cursor:not-allowed;transform:none;filter:none;}
+  .btn-sm{min-height:36px;padding:6px 13px;font-size:12.5px;border-radius:10px;gap:6px;}
+  .btn-primary{background:linear-gradient(135deg,#F2D57F,var(--gold-dark));color:#1B2E15;}
+  .btn-accent{background:linear-gradient(135deg,var(--green-light),var(--green-dark));color:#fff;}
   .btn-whatsapp{background:linear-gradient(135deg,var(--whatsapp),var(--whatsapp-dark));color:#fff;}
-  .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.4);}
+  .btn-ghost{background:rgba(255,255,255,.13);color:#fff;border:1px solid rgba(255,255,255,.32);box-shadow:none;backdrop-filter:blur(4px);}
   .btn-ghost:hover{background:rgba(255,255,255,.24);}
-  .btn-outline{background:#fff;color:var(--green-dark);border:1.5px solid #CFE3D5;}
-  .btn-outline:hover{background:#F2FAF4;}
-  .btn-danger{background:#fff;color:var(--danger);border:1.5px solid #F0C9CE;}
-  .btn-danger:hover{background:#FBEEEF;}
+  .btn-outline{background:#fff;color:var(--green-dark);border:1.5px solid #CFE0D5;box-shadow:none;}
+  .btn-outline:hover{background:var(--green-tint);border-color:#A9CDB6;}
+  .btn-danger{background:#fff;color:var(--danger);border:1.5px solid #F0C9CE;box-shadow:none;}
+  .btn-danger:hover{background:var(--danger-tint);}
   .btnbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
   .badge{
     background:var(--gold);color:var(--green-dark);border-radius:999px;
-    font-size:11px;font-weight:800;padding:1px 7px;margin-left:2px;
+    font-size:11px;font-weight:800;padding:1px 8px;min-width:20px;text-align:center;
   }
 
-  /* ============ LAYOUT / FORM PANEL ============ */
-  .layout{padding:0 0 60px;}
+  /* ============ LAYOUT ============ */
+  .layout{padding:0 0 70px;}
   .toolrow{
-    max-width:800px;margin:20px auto 6px;padding:0 20px;
+    max-width:880px;margin:22px auto 4px;padding:0 20px;
     display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   }
   .edit-banner{
-    max-width:760px;margin:0 auto 6px;padding:12px 18px;
-    background:#FFF5DE;border:1px solid #F0DDA0;border-radius:12px;
+    max-width:840px;margin:10px auto 0;padding:12px 16px;
+    background:linear-gradient(135deg,#FFF7E0,#FFF1CA);
+    border:1px solid #EFD98C;border-radius:14px;
     display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    box-shadow:var(--shadow-sm);
   }
-  .edit-banner .txt{font-size:13px;color:#5B4A16;font-weight:600;}
+  .edit-banner .txt{font-size:13.5px;color:#5B4A16;font-weight:600;}
 
-  .form-panel{max-width:800px;margin:14px auto 0;padding:0 20px 40px;}
+  .form-panel{max-width:880px;margin:14px auto 0;padding:0 20px 40px;}
 
   .card{
-    background:#fff;
-    border:1px solid var(--card-border);
-    border-radius:16px;
-    padding:20px 20px 22px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px clamp(16px,3vw,26px) 24px;
     margin-bottom:18px;
-    box-shadow:0 1px 3px rgba(20,22,17,.05);
+    box-shadow:var(--shadow-sm);
+    position:relative;overflow:hidden;
+    transition:box-shadow .2s ease,border-color .2s ease;
   }
-  .card-head{display:flex;align-items:center;gap:11px;margin-bottom:16px;}
+  .card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:linear-gradient(180deg,var(--green-light),var(--gold));opacity:.85;
+  }
+  .card:focus-within{box-shadow:var(--shadow-md);border-color:#CFE0D5;}
+  .card-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
   .card-head .num{
-    width:30px;height:30px;border-radius:50%;flex:0 0 30px;
+    width:34px;height:34px;border-radius:11px;flex:0 0 34px;
     background:linear-gradient(135deg,var(--green-light),var(--green-dark));
-    color:#fff;font-size:13px;font-weight:800;
+    color:#fff;font-size:14px;font-weight:800;
     display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 8px rgba(31,107,69,.3);
   }
-  .card-head .title{font-size:15.5px;font-weight:700;color:#1B3A2A;}
-  .card-sub{font-size:12.5px;color:var(--ink-soft);margin:-8px 0 14px 41px;}
+  .card-head .num .ic{width:18px;height:18px;}
+  .card-head .title{font-size:16.5px;font-weight:700;color:#173626;}
+  .card-sub{font-size:13px;color:var(--ink-soft);margin:-6px 0 14px 46px;}
 
-  .field{margin-bottom:12px;}
+  .field{margin-bottom:14px;min-width:0;}
   .field:last-child{margin-bottom:0;}
   .field label{
-    display:block;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    margin-bottom:4px;
-    font-weight:600;
+    display:block;font-size:12.8px;color:var(--ink-soft);
+    margin-bottom:6px;font-weight:600;
   }
-  .field input[type=text],
-  .field input[type=date],
-  .field input[type=tel],
-  .field input[type=email],
-  .field textarea,
+  .field input[type=text],.field input[type=date],.field input[type=tel],
+  .field input[type=email],.field input[type=password],.field textarea,.field select{
+    width:100%;min-height:46px;padding:11px 14px;
+    font-size:15px;
+    border:1.5px solid #E2DDC8;border-radius:12px;
+    background:#FCFBF7;color:var(--ink);
+    transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;
+    -webkit-appearance:none;appearance:none;
+  }
   .field select{
-    width:100%;
-    padding:10px 12px;
-    font-family:inherit;
-    font-size:14px;
-    border:1.5px solid #E1DBC5;
-    border-radius:10px;
-    background:#FCFBF6;
-    color:var(--ink);
-    transition:border-color .15s ease, background .15s ease;
+    cursor:pointer;padding-right:38px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235B6152' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;
   }
-  .field select{cursor:pointer;}
-  .field textarea{resize:vertical;min-height:46px;}
+  .field textarea{resize:vertical;min-height:70px;}
+  .field input::placeholder,.field textarea::placeholder{color:#B1B5A4;}
+  .field input:hover,.field textarea:hover,.field select:hover{border-color:#CBC5A9;}
   .field input:focus,.field textarea:focus,.field select:focus{
-    outline:none;
-    border-color:var(--focus);
-    background:#fff;
-    box-shadow:0 0 0 3px rgba(46,139,87,.15);
+    outline:none;border-color:var(--focus);background:#fff;
+    box-shadow:0 0 0 4px rgba(46,139,87,.14);
   }
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media (max-width:520px){.row2{grid-template-columns:1fr;}}
+  .sub-label{font-size:13px;font-weight:700;color:var(--green-dark);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px dashed var(--line);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  @media (max-width:560px){.row2{grid-template-columns:1fr;}}
 
   .photo-drop{
-    border:2px dashed #D8D0B4;
-    border-radius:12px;
-    padding:14px;
-    text-align:center;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    background:#FCFBF6;
-    cursor:pointer;
-    transition:border-color .15s ease, background .15s ease;
+    border:2px dashed #CFC8A8;border-radius:14px;padding:18px;
+    text-align:center;font-size:13.5px;color:var(--ink-soft);
+    background:#FCFBF7;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    transition:border-color .15s ease,background .15s ease;
   }
-  .photo-drop:hover{border-color:var(--green-light);background:#F2FAF4;}
-  .photo-drop img{max-height:90px;display:block;margin:0 auto 6px;border-radius:6px;}
+  .photo-drop:hover{border-color:var(--green-light);background:var(--green-tint);}
+  .photo-drop .ic{width:26px;height:26px;color:var(--green);}
+  .photo-drop img{max-height:110px;display:block;margin:0 auto 4px;border-radius:8px;box-shadow:var(--shadow-md);}
 
+  /* family rows */
   .fam-row{
-    display:grid;
-    grid-template-columns:1.2fr 60px 1fr 1fr 1fr 28px;
-    gap:6px;
-    margin-bottom:8px;
-    align-items:center;
+    display:grid;grid-template-columns:1.3fr 70px 1fr 1fr 1fr 34px;
+    gap:8px;margin-bottom:9px;align-items:center;
   }
-  .fam-row input{padding:8px 8px;font-size:12.5px;border:1.5px solid #E1DBC5;border-radius:8px;background:#FCFBF6;}
-  .fam-row input:focus{outline:none;border-color:var(--focus);background:#fff;}
-  @media (max-width:640px){.fam-row{grid-template-columns:1fr 1fr;}}
+  .fam-row input{
+    width:100%;min-width:0;min-height:42px;padding:9px 11px;font-size:14px;
+    border:1.5px solid #E2DDC8;border-radius:10px;background:#FCFBF7;color:var(--ink);
+  }
+  .fam-row input:focus{outline:none;border-color:var(--focus);background:#fff;box-shadow:0 0 0 3px rgba(46,139,87,.14);}
   .fam-remove{
-    background:#FBEEEF;border:none;color:var(--danger);cursor:pointer;font-size:16px;line-height:1;
-    width:26px;height:26px;border-radius:50%;
+    background:var(--danger-tint);border:none;color:var(--danger);cursor:pointer;
+    width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;line-height:1;transition:background .15s ease,transform .15s ease;
   }
+  .fam-remove:hover{background:#F8DDE0;transform:scale(1.06);}
   .fam-head-row{
-    display:grid;grid-template-columns:1.2fr 60px 1fr 1fr 1fr 28px;gap:6px;
-    font-size:11px;color:var(--ink-soft);font-weight:700;margin-bottom:4px;
+    display:grid;grid-template-columns:1.3fr 70px 1fr 1fr 1fr 34px;gap:8px;
+    font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;padding:0 2px;
   }
-  @media (max-width:640px){.fam-head-row{display:none;}}
+  @media (max-width:700px){
+    .fam-head-row{display:none;}
+    .fam-row{
+      grid-template-columns:1fr 1fr;padding:14px 12px 12px;
+      border:1.5px solid var(--line);border-radius:14px;background:#FAF9F3;
+      position:relative;margin-bottom:12px;
+    }
+    .fam-row input:nth-child(1){grid-column:1 / -1;}
+    .fam-remove{position:absolute;top:-10px;right:-6px;width:30px;height:30px;box-shadow:var(--shadow-sm);border:1px solid #F0C9CE;}
+  }
   .add-row-btn{
-    background:#F2FAF4;
-    border:1.5px dashed var(--green-light);
-    color:var(--green-dark);
-    border-radius:10px;
-    padding:8px 14px;
-    font-size:12.5px;
-    font-weight:700;
-    cursor:pointer;
-    margin-top:2px;
+    background:var(--green-tint);border:1.5px dashed var(--green-light);color:var(--green-dark);
+    border-radius:12px;padding:10px 16px;min-height:42px;font-size:13.5px;font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;margin-top:4px;
+    transition:background .15s ease,transform .15s ease;
   }
+  .add-row-btn:hover{background:#DDF0E4;transform:translateY(-1px);}
 
-  /* Signature pad */
+  /* signature pad */
   .sig-pad-wrap{
-    border:2px dashed #D8D0B4;
-    border-radius:12px;
-    background:#fff;
-    touch-action:none;
-    overflow:hidden;
+    border:2px dashed #CFC8A8;border-radius:14px;background:#fff;
+    touch-action:none;overflow:hidden;
+    background-image:linear-gradient(transparent 85%,rgba(31,107,69,.15) 85%,rgba(31,107,69,.15) calc(85% + 1px),transparent calc(85% + 1px));
   }
-  .sig-pad-wrap canvas{width:100%;height:160px;display:block;cursor:crosshair;background:#fff;}
+  .sig-pad-wrap canvas{width:100%;height:170px;display:block;cursor:crosshair;background:transparent;touch-action:none;}
 
   /* ============ OVERLAYS ============ */
   .overlay{
     position:fixed;inset:0;
-    background:rgba(15,20,14,.6);
-    display:none;
-    align-items:flex-start;
-    justify-content:center;
-    overflow-y:auto;
-    padding:26px 14px 60px;
-    z-index:100;
+    background:rgba(10,20,13,.62);
+    -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+    display:none;align-items:flex-start;justify-content:center;
+    overflow-y:auto;overscroll-behavior:contain;
+    padding:24px 14px 60px;z-index:100;
   }
   body.preview-open #previewOverlay{display:flex;}
   body.saved-open #savedOverlay{display:flex;}
   body.sync-open #syncOverlay{display:flex;}
-  .overlay-inner{width:100%;max-width:860px;}
+  .overlay-inner{width:100%;max-width:900px;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.985);}to{opacity:1;transform:none;}}
   .overlay-toolbar{
     display:flex;justify-content:space-between;align-items:center;
-    gap:12px;flex-wrap:wrap;
-    margin-bottom:14px;
-    background:rgba(255,255,255,.95);
-    border-radius:14px;
-    padding:12px 16px;
+    gap:12px;flex-wrap:wrap;margin-bottom:14px;
+    background:rgba(255,255,255,.97);border-radius:16px;padding:12px 16px;
+    box-shadow:var(--shadow-md);
   }
+  .overlay-toolbar h2{font-family:'Tiro Bangla',serif;font-weight:400;color:#223019;margin:0;font-size:20px;display:flex;align-items:center;gap:9px;}
   .overlay-toolbar .ctxlabel{font-size:12.5px;color:var(--ink-soft);font-weight:600;}
   .close-x{
-    background:#fff;border:1.5px solid var(--card-border);color:var(--ink);
-    border-radius:999px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;
+    background:#fff;border:1.5px solid var(--line);color:var(--ink);
+    border-radius:12px;min-height:40px;padding:8px 15px;font-weight:700;font-size:13px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:background .15s ease;
   }
-  .close-x:hover{background:#F5F3EA;}
+  .close-x:hover{background:#F3F1E7;}
   .paper-size-select{
-    padding:8px 12px;border-radius:999px;border:1.5px solid var(--card-border);
-    font-family:inherit;font-size:13px;font-weight:600;background:#fff;color:var(--ink);
+    min-height:42px;padding:8px 34px 8px 14px;border-radius:12px;border:1.5px solid #CFE0D5;
+    font-size:13.5px;font-weight:700;background:#fff;color:var(--green-dark);cursor:pointer;
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230F3522' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  .preview-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+  .preview-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .hint-note{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+  .preview-hint{
+    text-align:center;color:#E8EFE6;background:rgba(0,0,0,.22);
+    border-radius:12px;padding:9px 14px;margin:0 0 14px;font-size:12.5px;
   }
 
   /* ============ PAPER / DOCUMENT ============ */
+  .paper-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;box-shadow:var(--shadow-lg);background:var(--paper);}
   .paper{
-    --s:1; /* continuous fill/fit scale factor, set by JS */
-    width:100%;
+    --s:1;
+    width:100%;min-width:760px;
     background:var(--paper);
     border:1px solid var(--paper-edge);
-    box-shadow:0 10px 30px rgba(20,22,17,.25);
     padding:34px 38px 30px;
     font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;
-    color:var(--ink);
-    border-radius:4px;
+    color:var(--ink);border-radius:4px;
   }
   .doc-head{
     display:grid;
     grid-template-columns:calc(150px*var(--s)) 1fr calc(190px*var(--s));
-    gap:calc(14px*var(--s));
-    align-items:start;
-    margin-bottom:6px;
+    gap:calc(14px*var(--s));align-items:start;margin-bottom:6px;
   }
-  @media (max-width:600px){ .doc-head{grid-template-columns:1fr;} }
   .photo-box{
     width:calc(150px*var(--s));height:calc(150px*var(--s));
     border:1px solid var(--ink);
@@ -309,50 +346,136 @@
   .sign-line{border-top:1px dotted var(--ink-soft);width:calc(220px*var(--s));text-align:center;padding-top:4px;}
   .sig-img-wrap{min-height:44px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:2px;}
   .sig-img-wrap img{max-height:calc(50px*var(--s));max-width:100%;}
-
   .notes{margin-top:calc(18px*var(--s));font-size:calc(11px*var(--s));color:var(--ink-soft);line-height:1.7;}
 
   /* ============ Saved forms list ============ */
   .saved-card{
-    background:#fff;border:1px solid var(--card-border);border-radius:14px;
+    background:#fff;border:1px solid var(--line);border-radius:16px;
     padding:16px 18px;margin-bottom:12px;
     display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+    box-shadow:var(--shadow-sm);transition:box-shadow .15s ease,transform .15s ease;
   }
-  .saved-card .info b{font-size:14.5px;}
-  .saved-card .info div{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .saved-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .saved-card .info{display:flex;align-items:center;gap:13px;min-width:0;}
+  .saved-card .avatar{
+    width:42px;height:42px;border-radius:12px;flex:0 0 42px;
+    background:linear-gradient(135deg,var(--green-tint),#D3EADB);color:var(--green-dark);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;
+  }
+  .saved-card .info b{font-size:15px;display:block;word-break:break-word;}
+  .saved-card .info small{display:block;font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .empty-state{
-    background:#fff;border:2px dashed var(--card-border);border-radius:14px;
-    padding:34px;text-align:center;color:var(--ink-soft);font-size:13.5px;
+    background:#fff;border:2px dashed var(--line);border-radius:16px;
+    padding:38px 22px;text-align:center;color:var(--ink-soft);font-size:14px;
   }
-  .hint-note{font-size:11.5px;color:var(--ink-soft);margin-top:8px;}
+
+  /* toast */
+  .toast{
+    position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translate(-50%,30px);
+    background:#173626;color:#fff;padding:12px 20px;border-radius:14px;
+    font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;
+    display:flex;align-items:center;gap:9px;max-width:calc(100vw - 32px);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  .toast .ic{color:var(--gold);}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:820px){
+    .topbar{position:static;}
+    .topbar .btnbar{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .topbar .btn{padding:9px 8px;font-size:12.5px;}
+    .brand p{display:none;}
+  }
+  @media (max-width:700px){
+    .layout{padding-bottom:calc(96px + var(--safe-bottom));}
+    .toolrow{
+      position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;max-width:none;
+      padding:10px 14px calc(10px + var(--safe-bottom));
+      background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+      border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(15,53,34,.12);
+      display:grid;grid-template-columns:1fr auto;gap:10px;
+    }
+    .toolrow .btn{width:100%;min-height:48px;font-size:14.5px;}
+    .form-panel{padding:0 12px 20px;margin-top:12px;}
+    .edit-banner{margin:10px 12px 0;}
+    .card{padding:18px 15px 20px;border-radius:14px;}
+    .card-sub{margin-left:0;}
+    .overlay{padding:0;}
+    .overlay-inner{max-width:none;min-height:100%;padding:10px 10px 40px;}
+    .overlay-toolbar{padding:10px 12px;border-radius:14px;}
+    .preview-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .preview-actions .paper-size-select{grid-column:1 / -1;width:100%;}
+    .preview-actions .btn{padding:9px 10px;font-size:13px;}
+    .preview-right{width:100%;justify-content:space-between;}
+    .saved-card{padding:14px;}
+    .saved-card .btnbar{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+    .saved-card .btn-sm{padding:6px 6px;}
+    .paper{padding:22px 24px 22px;}
+  }
+  @media (max-width:380px){
+    .topbar .btn{font-size:11.5px;gap:5px;}
+    .topbar .btn .ic{display:none;}
+    .btn{padding:9px 12px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;scroll-behavior:auto !important;}
+  }
 
   @media print{
-    body{background:#fff;}
-    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,.hint-note,#savedOverlay,#syncOverlay{display:none !important;}
-    #previewOverlay{display:block !important;position:static;background:none;padding:0;inset:auto;}
-    .overlay-inner{max-width:100%;}
-    .paper{box-shadow:none;border:none;border-radius:0;padding:14mm 16mm;}
+    body{background:#fff !important;overflow:visible !important;}
+    .topbar,.form-panel,.toolrow,.edit-banner,.overlay-toolbar,.close-x,.hint-note,.preview-hint,.toast,#savedOverlay,#syncOverlay{display:none !important;}
+    #previewOverlay{display:block !important;position:static;background:none;padding:0;inset:auto;backdrop-filter:none;}
+    .overlay-inner{max-width:100%;padding:0;animation:none;}
+    .paper-wrap{overflow:visible;box-shadow:none;background:none;}
+    .paper{box-shadow:none;border:none;border-radius:0;padding:14mm 16mm;min-width:0;}
   }
 </style>
 </head>
 <body>
 
+<!-- SVG icon sprite -->
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M20 20H9l-6-6a2 2 0 0 1 0-2.8l8.2-8.2a2 2 0 0 1 2.8 0l6 6a2 2 0 0 1 0 2.8L12 20"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+</svg>
+
 <div class="topbar">
   <div class="brand">
-    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="24" cy="24" r="22" fill="#E7C567"/>
-      <path d="M24 10 L38 20 V37 H10 V20 Z" fill="#123D27"/>
-      <rect x="20" y="26" width="8" height="11" fill="#E7C567"/>
-    </svg>
+    <div class="brand-mark">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="22" fill="#E7C567"/>
+        <path d="M24 10 L38 20 V37 H10 V20 Z" fill="#123D27"/>
+        <rect x="20" y="26" width="8" height="11" fill="#E7C567"/>
+      </svg>
+    </div>
     <div>
-      <h1>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র — ফর্ম বিল্ডার</h1>
+      <h1>অস্থায়ী ভাড়াটিয়া চুক্তিপত্র</h1>
       <p>তথ্য দিন, প্রিভিউ দেখুন, প্রিন্ট করুন বা WhatsApp-এ পাঠান</p>
     </div>
   </div>
   <div class="btnbar">
-    <button class="btn btn-primary" id="previewBtn" type="button">👁 প্রিভিউ দেখুন</button>
-    <button class="btn btn-ghost" id="savedListBtn" type="button">📁 সংরক্ষিত ফর্ম<span class="badge" id="savedCount">0</span></button>
-    <button class="btn btn-ghost" id="syncSettingsBtn" type="button">☁️ সিঙ্ক সেটিংস</button>
+    <button class="btn btn-primary" id="previewBtn" type="button"><svg class="ic"><use href="#i-eye"/></svg>প্রিভিউ</button>
+    <button class="btn btn-ghost" id="savedListBtn" type="button"><svg class="ic"><use href="#i-folder"/></svg>সংরক্ষিত<span class="badge" id="savedCount">0</span></button>
+    <button class="btn btn-ghost" id="syncSettingsBtn" type="button"><svg class="ic"><use href="#i-cloud"/></svg>সিঙ্ক</button>
   </div>
 </div>
 
@@ -363,27 +486,31 @@
   </div>
 
   <div class="toolrow">
-    <button class="btn btn-accent" id="saveFormBtn" type="button">💾 <span id="saveBtnLabel">এই ফর্ম সংরক্ষণ করুন</span></button>
-    <button class="btn btn-danger" id="resetBtn" type="button">↺ রিসেট</button>
+    <button class="btn btn-accent" id="saveFormBtn" type="button"><svg class="ic"><use href="#i-save"/></svg><span id="saveBtnLabel">এই ফর্ম সংরক্ষণ করুন</span></button>
+    <button class="btn btn-danger" id="resetBtn" type="button"><svg class="ic"><use href="#i-reset"/></svg>রিসেট</button>
   </div>
 
   <!-- ===================== FORM PANEL ===================== -->
   <div class="form-panel">
-    <form id="theForm">
+    <form id="theForm" autocomplete="off">
 
       <div class="card">
-        <div class="card-head"><div class="num">🏠</div><div class="title">ছবি ও ঠিকানা (উপরের বক্স)</div></div>
+        <div class="card-head"><div class="num"><svg class="ic"><use href="#i-home"/></svg></div><div class="title">ছবি ও ঠিকানা (উপরের বক্স)</div></div>
         <div class="field">
           <label>পাসপোর্ট সাইজ ছবি</label>
-          <div class="photo-drop" id="photoDrop"><span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span></div>
+          <div class="photo-drop" id="photoDrop"><svg class="ic"><use href="#i-upload"/></svg><span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span></div>
           <input type="file" id="photoInput" accept="image/*" style="display:none;">
         </div>
-        <div class="field"><label>ফ্ল্যাট/তলা</label><input type="text" data-key="flat"></div>
-        <div class="field"><label>বাড়ী/হোল্ডিং</label><input type="text" data-key="holding"></div>
-        <div class="field"><label>রাস্তা</label><input type="text" data-key="road"></div>
-        <div class="field"><label>এলাকা</label><input type="text" data-key="area"></div>
         <div class="row2">
-          <div class="field"><label>পোস্ট কোড</label><input type="text" data-key="postcode"></div>
+          <div class="field"><label>ফ্ল্যাট/তলা</label><input type="text" data-key="flat"></div>
+          <div class="field"><label>বাড়ী/হোল্ডিং</label><input type="text" data-key="holding"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>রাস্তা</label><input type="text" data-key="road"></div>
+          <div class="field"><label>এলাকা</label><input type="text" data-key="area"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>পোস্ট কোড</label><input type="text" inputmode="numeric" data-key="postcode"></div>
           <div class="field"><label>থানা</label><input type="text" data-key="thana"></div>
         </div>
       </div>
@@ -405,7 +532,7 @@
           </div>
         </div>
 
-        <div class="field" style="margin-bottom:6px;"><label>স্থায়ী ঠিকানা</label></div>
+        <div class="sub-label">স্থায়ী ঠিকানা</div>
         <div class="row2">
           <div class="field"><label>বাসা/হোল্ডিং</label><input type="text" data-key="permHolding"></div>
           <div class="field"><label>গ্রাম/রাস্তা</label><input type="text" data-key="permVillageRoad"></div>
@@ -416,7 +543,8 @@
         </div>
         <div class="field"><label>জেলা</label><input type="text" data-key="permDistrict"></div>
 
-        <div class="field" style="margin-top:12px;"><label>পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানা</label><textarea data-key="profession"></textarea></div>
+        <div class="sub-label">পেশা ও অন্যান্য</div>
+        <div class="field"><label>পেশা ও প্রতিষ্ঠান/কর্মস্থলের ঠিকানা</label><textarea data-key="profession"></textarea></div>
         <div class="row2">
           <div class="field">
             <label>ধর্ম</label>
@@ -432,11 +560,11 @@
           <div class="field"><label>শিক্ষাগত যোগ্যতা</label><input type="text" data-key="education"></div>
         </div>
         <div class="row2">
-          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="mobile"></div>
-          <div class="field"><label>ই-মেইল আইডি</label><input type="email" data-key="email"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" inputmode="tel" data-key="mobile"></div>
+          <div class="field"><label>ই-মেইল আইডি</label><input type="email" inputmode="email" data-key="email"></div>
         </div>
         <div class="row2">
-          <div class="field"><label>জাতীয় পরিচয়পত্র নম্বর</label><input type="text" data-key="nid"></div>
+          <div class="field"><label>জাতীয় পরিচয়পত্র নম্বর</label><input type="text" inputmode="numeric" data-key="nid"></div>
           <div class="field"><label>পাসপোর্ট নম্বর (যদি থাকে)</label><input type="text" data-key="passport"></div>
         </div>
       </div>
@@ -449,7 +577,7 @@
         </div>
         <div class="row2">
           <div class="field"><label>ঠিকানা</label><input type="text" data-key="ecAddr"></div>
-          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="ecMobile"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" inputmode="tel" data-key="ecMobile"></div>
         </div>
       </div>
 
@@ -459,17 +587,17 @@
           <div>নাম</div><div>বয়স</div><div>সম্পর্ক</div><div>পেশা</div><div>মোবাইল</div><div></div>
         </div>
         <div id="famRows"></div>
-        <button type="button" class="add-row-btn" id="addFamRow">+ সদস্য যোগ করুন</button>
+        <button type="button" class="add-row-btn" id="addFamRow"><svg class="ic"><use href="#i-plus"/></svg>সদস্য যোগ করুন</button>
       </div>
 
       <div class="card">
         <div class="card-head"><div class="num">১২</div><div class="title">গৃহকর্মীর তথ্য</div></div>
         <div class="row2">
           <div class="field"><label>নাম</label><input type="text" data-key="maidName"></div>
-          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" data-key="maidNid"></div>
+          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" inputmode="numeric" data-key="maidNid"></div>
         </div>
         <div class="row2">
-          <div class="field"><label>মোবাইল নং</label><input type="tel" data-key="maidMobile"></div>
+          <div class="field"><label>মোবাইল নং</label><input type="tel" inputmode="tel" data-key="maidMobile"></div>
           <div class="field"><label>স্থায়ী ঠিকানা</label><input type="text" data-key="maidAddr"></div>
         </div>
       </div>
@@ -478,10 +606,10 @@
         <div class="card-head"><div class="num">১৩</div><div class="title">ড্রাইভারের তথ্য</div></div>
         <div class="row2">
           <div class="field"><label>নাম</label><input type="text" data-key="driverName"></div>
-          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" data-key="driverNid"></div>
+          <div class="field"><label>জাতীয় পরিচয় পত্র নং</label><input type="text" inputmode="numeric" data-key="driverNid"></div>
         </div>
         <div class="row2">
-          <div class="field"><label>মোবাইল নং</label><input type="tel" data-key="driverMobile"></div>
+          <div class="field"><label>মোবাইল নং</label><input type="tel" inputmode="tel" data-key="driverMobile"></div>
           <div class="field"><label>স্থায়ী ঠিকানা</label><input type="text" data-key="driverAddr"></div>
         </div>
       </div>
@@ -490,29 +618,29 @@
         <div class="card-head"><div class="num">১৪</div><div class="title">বাড়িওয়ালা সংক্রান্ত (১৪–১৬)</div></div>
         <div class="row2">
           <div class="field"><label>পূর্ববর্তী বাড়িওয়ালার নাম</label><input type="text" data-key="prevOwnerName"></div>
-          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="prevOwnerMobile"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" inputmode="tel" data-key="prevOwnerMobile"></div>
         </div>
         <div class="field"><label>ঠিকানা</label><input type="text" data-key="prevOwnerAddr"></div>
         <div class="field"><label>পূর্ববর্তী বাসা ছাড়ার কারণ</label><input type="text" data-key="leaveReason"></div>
         <div class="row2">
           <div class="field"><label>বর্তমান বাড়িওয়ালার নাম</label><input type="text" data-key="currOwnerName"></div>
-          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" data-key="currOwnerMobile"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="tel" inputmode="tel" data-key="currOwnerMobile"></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-head"><div class="num">📅</div><div class="title">তারিখ</div></div>
+        <div class="card-head"><div class="num"><svg class="ic"><use href="#i-calendar"/></svg></div><div class="title">তারিখ</div></div>
         <div class="field"><label>ফর্ম পূরণের তারিখ</label><input type="date" data-key="formDate"></div>
       </div>
 
       <div class="card">
-        <div class="card-head"><div class="num">✍</div><div class="title">ভাড়াটিয়ার স্বাক্ষর</div></div>
+        <div class="card-head"><div class="num"><svg class="ic"><use href="#i-edit"/></svg></div><div class="title">ভাড়াটিয়ার স্বাক্ষর</div></div>
         <div class="card-sub">নিচে মাউস/আঙুল দিয়ে সরাসরি স্বাক্ষর আঁকুন, অথবা ক্যামেরা/গ্যালারি থেকে সইয়ের ছবি যোগ করুন।</div>
         <div class="sig-pad-wrap"><canvas id="sigCanvas" width="600" height="180"></canvas></div>
-        <div class="btnbar" style="margin-top:10px;">
-          <button type="button" class="btn btn-outline btn-sm" id="sigClearBtn">🧹 মুছুন</button>
-          <button type="button" class="btn btn-outline btn-sm" id="sigCameraBtn">📷 ক্যামেরা দিয়ে তুলুন</button>
-          <button type="button" class="btn btn-outline btn-sm" id="sigGalleryBtn">🖼 গ্যালারি থেকে বাছুন</button>
+        <div class="btnbar" style="margin-top:12px;">
+          <button type="button" class="btn btn-outline btn-sm" id="sigClearBtn"><svg class="ic"><use href="#i-eraser"/></svg>মুছুন</button>
+          <button type="button" class="btn btn-outline btn-sm" id="sigCameraBtn"><svg class="ic"><use href="#i-camera"/></svg>ক্যামেরা</button>
+          <button type="button" class="btn btn-outline btn-sm" id="sigGalleryBtn"><svg class="ic"><use href="#i-image"/></svg>গ্যালারি</button>
           <input type="file" accept="image/*" capture="environment" id="sigCameraInput" style="display:none">
           <input type="file" accept="image/*" id="sigGalleryInput" style="display:none">
         </div>
@@ -526,23 +654,24 @@
 <div class="overlay" id="previewOverlay">
   <div class="overlay-inner">
     <div class="overlay-toolbar">
-      <div class="btnbar">
-        <select class="paper-size-select" id="paperSizeSelect">
+      <div class="preview-actions">
+        <select class="paper-size-select" id="paperSizeSelect" aria-label="কাগজের সাইজ">
           <option value="a4" selected>A4 সাইজ</option>
           <option value="legal">Legal সাইজ</option>
         </select>
-        <button class="btn btn-primary" id="printBtn" type="button">🖨 প্রিন্ট / PDF সেভ</button>
-        <button class="btn btn-whatsapp" id="whatsappJpgBtn" type="button">🖼 JPG পাঠান</button>
-        <button class="btn btn-whatsapp" id="whatsappPdfBtn" type="button">📄 PDF পাঠান</button>
-        <button class="btn btn-outline" id="editFromPreviewBtn" type="button" style="display:none;">✏️ এডিট করুন</button>
+        <button class="btn btn-primary" id="printBtn" type="button"><svg class="ic"><use href="#i-print"/></svg>প্রিন্ট / PDF</button>
+        <button class="btn btn-whatsapp" id="whatsappJpgBtn" type="button"><svg class="ic"><use href="#i-image"/></svg>JPG পাঠান</button>
+        <button class="btn btn-whatsapp" id="whatsappPdfBtn" type="button"><svg class="ic"><use href="#i-file"/></svg>PDF পাঠান</button>
+        <button class="btn btn-outline" id="editFromPreviewBtn" type="button" style="display:none;"><svg class="ic"><use href="#i-edit"/></svg>এডিট করুন</button>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
+      <div class="preview-right">
         <span class="ctxlabel" id="previewContextLabel"></span>
-        <button class="close-x" id="closePreview" type="button">✕ বন্ধ করুন</button>
+        <button class="close-x" id="closePreview" type="button"><svg class="ic"><use href="#i-x"/></svg>বন্ধ করুন</button>
       </div>
     </div>
-    <p class="hint-note" style="text-align:center;">📱 মোবাইলে "JPG/PDF পাঠান" চাপলে শেয়ার মেনু থেকে সরাসরি WhatsApp বেছে নিন। ডেস্কটপে ফাইল ডাউনলোড হয়ে যাবে, তারপর WhatsApp Web-এ অ্যাটাচ করে দিন।</p>
+    <p class="preview-hint">📱 মোবাইলে "JPG/PDF পাঠান" চাপলে শেয়ার মেনু থেকে সরাসরি WhatsApp বেছে নিন। ডেস্কটপে ফাইল ডাউনলোড হবে, তারপর WhatsApp Web-এ অ্যাটাচ করুন।</p>
 
+    <div class="paper-wrap">
     <div class="paper" id="paper">
       <div class="doc-head">
         <div class="photo-box" id="previewPhotoBox">এক কপি পাসপোর্ট<br>সাইজ ছবি</div>
@@ -646,6 +775,7 @@
         (২) পরিবারের সদস্য সংখ্যা বেশী হলে, অপর পৃষ্ঠায় লিপিবদ্ধ করতে হবে।
       </div>
     </div>
+    </div>
   </div>
 </div>
 
@@ -653,8 +783,8 @@
 <div class="overlay" id="savedOverlay">
   <div class="overlay-inner">
     <div class="overlay-toolbar">
-      <h2 style="font-family:'Tiro Bangla',serif;font-weight:400;color:#2A2E23;margin:0;">📁 সংরক্ষিত ফর্মসমূহ</h2>
-      <button class="close-x" id="closeSaved" type="button">✕ বন্ধ করুন</button>
+      <h2><svg class="ic"><use href="#i-folder"/></svg>সংরক্ষিত ফর্মসমূহ</h2>
+      <button class="close-x" id="closeSaved" type="button"><svg class="ic"><use href="#i-x"/></svg>বন্ধ করুন</button>
     </div>
     <div id="savedList"></div>
   </div>
@@ -662,10 +792,10 @@
 
 <!-- ===================== SYNC SETTINGS OVERLAY (PIN protected) ===================== -->
 <div class="overlay" id="syncOverlay">
-  <div class="overlay-inner" style="max-width:540px;">
+  <div class="overlay-inner" style="max-width:560px;">
     <div class="overlay-toolbar">
-      <h2 style="font-family:'Tiro Bangla',serif;font-weight:400;color:#2A2E23;margin:0;">☁️ ডিভাইস সিঙ্ক সেটিংস</h2>
-      <button class="close-x" id="closeSync" type="button">✕ বন্ধ করুন</button>
+      <h2><svg class="ic"><use href="#i-cloud"/></svg>ডিভাইস সিঙ্ক সেটিংস</h2>
+      <button class="close-x" id="closeSync" type="button"><svg class="ic"><use href="#i-x"/></svg>বন্ধ করুন</button>
     </div>
 
     <!-- first-time: create a PIN -->
@@ -675,8 +805,8 @@
       </div>
       <div class="field"><label>নতুন PIN</label><input type="password" inputmode="numeric" id="pinNewInput" placeholder="৪-৬ ডিজিট"></div>
       <div class="field"><label>PIN আবার লিখুন</label><input type="password" inputmode="numeric" id="pinNewConfirm" placeholder="আবার লিখুন"></div>
-      <div class="btnbar" style="margin-top:12px;">
-        <button class="btn btn-accent btn-sm" id="pinSetBtn" type="button">🔒 PIN সেট করুন</button>
+      <div class="btnbar" style="margin-top:14px;">
+        <button class="btn btn-accent btn-sm" id="pinSetBtn" type="button"><svg class="ic"><use href="#i-lock"/></svg>PIN সেট করুন</button>
         <button class="btn btn-outline btn-sm" id="pinSkipBtn" type="button">PIN ছাড়াই রাখুন</button>
       </div>
       <p id="pinSetupStatus" class="hint-note" style="margin-top:10px;"></p>
@@ -686,7 +816,7 @@
     <div class="card" id="syncLockView" style="display:none;">
       <div class="card-sub" style="margin-left:0;margin-top:0;">🔒 এই সেটিংস PIN দিয়ে সুরক্ষিত। চালিয়ে যেতে আপনার PIN দিন।</div>
       <div class="field"><label>PIN</label><input type="password" inputmode="numeric" id="pinUnlockInput" placeholder="আপনার PIN"></div>
-      <div class="btnbar" style="margin-top:12px;">
+      <div class="btnbar" style="margin-top:14px;">
         <button class="btn btn-accent btn-sm" id="pinUnlockBtn" type="button">আনলক করুন</button>
       </div>
       <p id="pinUnlockStatus" class="hint-note" style="margin-top:10px;"></p>
@@ -696,22 +826,24 @@
     <!-- unlocked: actual settings -->
     <div class="card" id="syncSettingsView" style="display:none;">
       <div class="card-sub" style="margin-left:0;margin-top:0;">
-        সব ডিভাইসে একই সংরক্ষিত ফর্মের তালিকা দেখতে চাইলে একটা ফ্রি Google Sheet + Apps Script Web App বানিয়ে তার লিংক ও গোপন কী এখানে বসান। সেটআপ গাইড চ্যাটে দেওয়া হয়েছে।
+        সব ডিভাইসে একই সংরক্ষিত ফর্মের তালিকা দেখতে চাইলে একটা ফ্রি Google Sheet + Apps Script Web App বানিয়ে তার লিংক ও গোপন কী এখানে বসান।
       </div>
       <div class="field"><label>Web App URL</label><input type="text" id="syncUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec"></div>
       <div class="field"><label>সিক্রেট কী</label><input type="text" id="syncKeyInput" placeholder="আপনার গোপন কী"></div>
-      <div class="btnbar" style="margin-top:12px;">
-        <button class="btn btn-accent btn-sm" id="saveSyncBtn" type="button">💾 সেভ ও কানেক্ট করুন</button>
+      <div class="btnbar" style="margin-top:14px;">
+        <button class="btn btn-accent btn-sm" id="saveSyncBtn" type="button"><svg class="ic"><use href="#i-save"/></svg>সেভ ও কানেক্ট করুন</button>
         <button class="btn btn-danger btn-sm" id="disableSyncBtn" type="button">সিঙ্ক বন্ধ করুন</button>
       </div>
       <p id="syncStatus" class="hint-note" style="margin-top:10px;"></p>
-      <div class="btnbar" style="margin-top:16px;border-top:1px solid var(--card-border);padding-top:14px;">
-        <button class="btn btn-outline btn-sm" id="pinLockNowBtn" type="button">🔒 এখনই লক করুন</button>
+      <div class="btnbar" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">
+        <button class="btn btn-outline btn-sm" id="pinLockNowBtn" type="button"><svg class="ic"><use href="#i-lock"/></svg>এখনই লক করুন</button>
         <button class="btn btn-outline btn-sm" id="pinChangeBtn" type="button">PIN পরিবর্তন করুন</button>
       </div>
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check"/></svg><span id="toastText"></span></div>
 
 <script>
 (function(){
@@ -730,6 +862,20 @@
 
   const bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
   function toBn(n){ return String(n).split('').map(d => bnDigits[d] ?? d).join(''); }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  const PHOTO_HINT_HTML = '<svg class="ic"><use href="#i-upload"/></svg><span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>';
+
+  /* ================= TOAST ================= */
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toastText').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
 
   /* ================= FAMILY ROWS (edit form) ================= */
   const famRows = document.getElementById('famRows');
@@ -738,11 +884,11 @@
     row.className = 'fam-row';
     row.innerHTML =
       '<input type="text" placeholder="নাম" data-f="name">' +
-      '<input type="text" placeholder="বয়স" data-f="age">' +
+      '<input type="text" placeholder="বয়স" data-f="age" inputmode="numeric">' +
       '<input type="text" placeholder="সম্পর্ক" data-f="relation">' +
       '<input type="text" placeholder="পেশা" data-f="occ">' +
-      '<input type="text" placeholder="মোবাইল" data-f="mob">' +
-      '<button type="button" class="fam-remove" title="মুছে ফেলুন">×</button>';
+      '<input type="tel" placeholder="মোবাইল" data-f="mob" inputmode="tel">' +
+      '<button type="button" class="fam-remove" title="মুছে ফেলুন" aria-label="মুছে ফেলুন">×</button>';
     famRows.appendChild(row);
     if(vals){
       row.querySelector('[data-f=name]').value = vals.name || '';
@@ -806,6 +952,7 @@
   function endStroke(){ if(drawing){ drawing = false; saveSignatureFromCanvas(); } }
   sigCanvas.addEventListener('pointerup', endStroke);
   sigCanvas.addEventListener('pointerleave', endStroke);
+  sigCanvas.addEventListener('pointercancel', endStroke);
 
   function saveSignatureFromCanvas(){
     currentSignatureDataUrl = sigCanvas.toDataURL('image/png');
@@ -885,7 +1032,7 @@
     currentPhotoDataUrl = data.photo || null;
     photoDrop.innerHTML = currentPhotoDataUrl
       ? '<img src="'+currentPhotoDataUrl+'" alt="ছবি"><span>ছবি পরিবর্তন করুন</span>'
-      : '<span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>';
+      : PHOTO_HINT_HTML;
 
     currentSignatureDataUrl = data.signature || null;
     loadSignatureIntoCanvas(currentSignatureDataUrl);
@@ -899,7 +1046,7 @@
     famRows.innerHTML = '';
     addFamRow(); addFamRow(); addFamRow();
     currentPhotoDataUrl = null;
-    photoDrop.innerHTML = '<span id="photoHint">ছবি বাছাই করতে ক্লিক করুন</span>';
+    photoDrop.innerHTML = PHOTO_HINT_HTML;
     currentSignatureDataUrl = null;
     sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
     currentEditingId = null;
@@ -926,7 +1073,7 @@
     body_.innerHTML = '';
     (arr||[]).forEach((r,i)=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+toBn(i+1)+'।</td><td>'+(r.name||'\u00A0')+'</td><td>'+(r.age||'\u00A0')+'</td><td>'+(r.relation||'\u00A0')+'</td><td>'+(r.occ||'\u00A0')+'</td><td>'+(r.mob||'\u00A0')+'</td>';
+      tr.innerHTML = '<td>'+toBn(i+1)+'।</td><td>'+(esc(r.name)||'\u00A0')+'</td><td>'+(esc(r.age)||'\u00A0')+'</td><td>'+(esc(r.relation)||'\u00A0')+'</td><td>'+(esc(r.occ)||'\u00A0')+'</td><td>'+(esc(r.mob)||'\u00A0')+'</td>';
       body_.appendChild(tr);
     });
   }
@@ -1223,7 +1370,7 @@
       catch(err){ console.error(err); alert('ফর্মটি এই ডিভাইসে সেভ হয়েছে, কিন্তু অন্য ডিভাইসে সিঙ্ক করতে সমস্যা হয়েছে: ' + err.message); }
       finally{ btn.disabled = false; btn.innerHTML = originalHtml; }
     }
-    alert('ফর্মটি সংরক্ষণ করা হয়েছে।');
+    showToast('ফর্মটি সংরক্ষণ করা হয়েছে।');
   });
 
   async function renderSavedList(){
@@ -1233,23 +1380,24 @@
       : '<div class="empty-state">লোড হচ্ছে...</div>';
     const list = await refreshSavedList();
     if(!list.length){
-      wrap.innerHTML = '<div class="empty-state">এখনও কোনো ফর্ম সংরক্ষণ করা হয়নি। ফর্ম পূরণের পর "এই ফর্ম সংরক্ষণ করুন" বাটনে ক্লিক করুন।</div>';
+      wrap.innerHTML = '<div class="empty-state">এখনও কোনো ফর্ম সংরক্ষণ করা হয়নি।<br>ফর্ম পূরণের পর "এই ফর্ম সংরক্ষণ করুন" বাটনে ক্লিক করুন।</div>';
       return;
     }
     wrap.innerHTML = '';
     list.forEach(item=>{
       const d = new Date(item.savedAt);
       const dateStr = isNaN(d) ? '' : d.toLocaleDateString('bn-BD',{year:'numeric',month:'long',day:'numeric'}) + ' ' + d.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
+      const label = item.label || 'নামহীন ফর্ম';
       const card = document.createElement('div');
       card.className = 'saved-card';
       card.innerHTML =
-        '<div class="info"><b>'+ (item.label || 'নামহীন ফর্ম') +'</b><div>সংরক্ষণের সময়: '+dateStr+'</div></div>' +
+        '<div class="info"><div class="avatar">'+esc(Array.from(label)[0] || '?')+'</div><div><b>'+ esc(label) +'</b><small>সংরক্ষণের সময়: '+esc(dateStr)+'</small></div></div>' +
         '<div class="btnbar">' +
-          '<button class="btn btn-primary btn-sm" data-act="view">👁 দেখুন</button>' +
-          '<button class="btn btn-outline btn-sm" data-act="edit">✏️ আপডেট</button>' +
-          '<button class="btn btn-outline btn-sm" data-act="print">🖨 প্রিন্ট</button>' +
-          '<button class="btn btn-whatsapp btn-sm" data-act="share">📤 শেয়ার</button>' +
-          '<button class="btn btn-danger btn-sm" data-act="delete">🗑 মুছুন</button>' +
+          '<button class="btn btn-primary btn-sm" data-act="view"><svg class="ic"><use href="#i-eye"/></svg>দেখুন</button>' +
+          '<button class="btn btn-outline btn-sm" data-act="edit"><svg class="ic"><use href="#i-edit"/></svg>আপডেট</button>' +
+          '<button class="btn btn-outline btn-sm" data-act="print"><svg class="ic"><use href="#i-print"/></svg>প্রিন্ট</button>' +
+          '<button class="btn btn-whatsapp btn-sm" data-act="share"><svg class="ic"><use href="#i-send"/></svg>শেয়ার</button>' +
+          '<button class="btn btn-danger btn-sm" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>মুছুন</button>' +
         '</div>';
       card.querySelector('[data-act=view]').addEventListener('click', ()=> openPreviewForItem(item));
       card.querySelector('[data-act=edit]').addEventListener('click', ()=>{
@@ -1361,26 +1509,6 @@
   document.getElementById('paperSizeSelect').addEventListener('change', fitPaperToPage);
   function printFromOverlay(){ fitPaperToPage(); setTimeout(()=>window.print(), 70); }
   document.getElementById('printBtn').addEventListener('click', printFromOverlay);
-  async function openPrintablePdf(){
-    const btn = document.getElementById('printBtn');
-    const originalHtml = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '⏳ তৈরি হচ্ছে...';
-    try{
-      const blob = await buildPdfBlob();
-      const url = URL.createObjectURL(blob);
-      const opened = window.open(url, '_blank');
-      if(!opened){
-        const a = document.createElement('a'); a.href = url; a.download = 'tenant-form.pdf';
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(()=>URL.revokeObjectURL(url), 30000);
-    } catch(err){
-      console.error(err);
-      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
-    } finally {
-      btn.disabled = false; btn.innerHTML = originalHtml;
-    }
-  }
   window.addEventListener('beforeprint', fitPaperToPage);
   window.addEventListener('afterprint', resetPaperScale);
 
@@ -1434,12 +1562,22 @@
     }
   }
   document.getElementById('whatsappJpgBtn').addEventListener('click', async (e)=>{
-    const blob = await buildJpgBlob();
-    shareFile(blob, 'tenant-form.jpg', 'image/jpeg', e.currentTarget);
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try{
+      const blob = await buildJpgBlob();
+      btn.disabled = false;
+      shareFile(blob, 'tenant-form.jpg', 'image/jpeg', btn);
+    }catch(err){ console.error(err); btn.disabled = false; alert('ছবি তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।'); }
   });
   document.getElementById('whatsappPdfBtn').addEventListener('click', async (e)=>{
-    const blob = await buildPdfBlob();
-    shareFile(blob, 'tenant-form.pdf', 'application/pdf', e.currentTarget);
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try{
+      const blob = await buildPdfBlob();
+      btn.disabled = false;
+      shareFile(blob, 'tenant-form.pdf', 'application/pdf', btn);
+    }catch(err){ console.error(err); btn.disabled = false; alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।'); }
   });
 
   /* ================= RESET ================= */
