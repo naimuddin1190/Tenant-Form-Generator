@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // শুধু লগইন করা এডমিন পড়তে/লিখতে পারবে।
+    // আরও কড়া করতে চাইলে: request.auth.token.email == 'আপনার-ইমেইল@example.com'
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
