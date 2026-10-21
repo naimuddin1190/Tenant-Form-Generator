@@ -277,7 +277,7 @@
   }
   .photo-drop:hover{border-color:var(--green-light);background:var(--green-tint);}
   .photo-drop .ic{width:26px;height:26px;color:var(--green);}
-  .photo-drop img{max-height:110px;display:block;margin:0 auto 4px;border-radius:8px;box-shadow:var(--shadow-md);}
+  .photo-drop img{width:105px;height:135px;object-fit:cover;display:block;margin:0 auto 4px;border-radius:8px;box-shadow:var(--shadow-md);border:2px solid #fff;}
 
   /* family rows */
   .fam-row{
@@ -380,11 +380,11 @@
   }
   .doc-head{
     display:grid;
-    grid-template-columns:calc(150px*var(--s)) 1fr calc(190px*var(--s));
+    grid-template-columns:calc(120px*var(--s)) 1fr calc(190px*var(--s));
     gap:calc(14px*var(--s));align-items:start;margin-bottom:6px;
   }
   .photo-box{
-    width:calc(150px*var(--s));height:calc(150px*var(--s));
+    width:calc(120px*var(--s));height:calc(154px*var(--s));
     border:1px solid var(--ink);
     display:flex;align-items:center;justify-content:center;
     font-size:calc(11px*var(--s));color:var(--ink-soft);
@@ -426,6 +426,8 @@
   }
   .saved-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
   .saved-card .info{display:flex;align-items:center;gap:13px;min-width:0;}
+  .saved-card .avatar.has-photo{width:54px;height:70px;flex:0 0 54px;border-radius:9px;overflow:hidden;padding:0;border:1.5px solid #CFE0D5;box-shadow:var(--shadow-sm);background:#fff;}
+  .saved-card .avatar.has-photo img{width:100%;height:100%;object-fit:cover;display:block;}
   .saved-card .avatar{
     width:42px;height:42px;border-radius:12px;flex:0 0 42px;
     background:linear-gradient(135deg,var(--green-tint),#D3EADB);color:var(--green-dark);
@@ -926,6 +928,6 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check"/></svg><span id="toastText"></span></div>
-<script type="module" src="/script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>

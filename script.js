@@ -9,7 +9,7 @@ import {
 //  Firebase Console → Project settings → Your apps → Web app (</>)
 //  থেকে কনফিগ কপি করে নিচের মানগুলো বদলে দিন।
 // =====================================================================
-const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyAQX7UnuNHrC4qq85pN9qUdb1X7OcUhwUE",
     authDomain: "tenant-form-generator.firebaseapp.com",
     projectId: "tenant-form-generator",
@@ -320,7 +320,7 @@ function renderTenantList(){
     const card = document.createElement('div');
     card.className = 'saved-card';
     card.innerHTML =
-      '<div class="info"><div class="avatar">' + toBn(idx + 1) + '</div><div><b>' + esc(item.label || 'নামহীন ভাড়াটিয়া') + '</b>' +
+      '<div class="info">' + (item.photoUrl ? '<div class="avatar has-photo"><img src="' + esc(item.photoUrl) + '" alt="ছবি"></div>' : '<div class="avatar">' + toBn(idx + 1) + '</div>') + '<div><b>' + esc(item.label || 'নামহীন ভাড়াটিয়া') + '</b>' +
       '<small>সিরিয়াল ' + toBn(idx + 1) + esc(mobile) + ' • ' + esc(dateStr) + '</small></div></div>' +
       '<div class="btnbar">' +
         '<button class="btn btn-primary btn-sm" data-act="view"><svg class="ic"><use href="#i-eye"/></svg>দেখুন</button>' +
@@ -399,11 +399,32 @@ async function syncImage(state, kind){
     const isSig = kind === 'signature';
     const small = isSig
       ? await compressDataUrl(state.newDataUrl, 450, 'image/png', 0.8)
-      : await compressDataUrl(state.newDataUrl, 360, 'image/jpeg', 0.7);
+      : state.newDataUrl; // ছবি আগেই পাসপোর্ট মাপে (৩১৫×৪০৫) কেটে ছোট করা হয়েছে
     return { url: small, path: null, stale: null };
   }
   if(state.removed) return { url: null, path: null, stale: null };
   return { url: state.url || null, path: null, stale: null };
+}
+
+// যেকোনো ছবিকে পাসপোর্ট অনুপাতে (৭:৯) ফ্রেমে বসিয়ে কেটে নেয়; মুখ সাধারণত উপরের দিকে থাকে, তাই উপরের দিক একটু বেশি রাখা হয়
+function cropToPassport(dataUrl, outW, outH, quality){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const target = outW / outH;
+      let sw = img.width, sh = img.height, sx = 0, sy = 0;
+      if(sw / sh > target){ sw = sh * target; sx = (img.width - sw) / 2; }
+      else { sh = sw / target; sy = (img.height - sh) * 0.25; }
+      const c = document.createElement('canvas'); c.width = outW; c.height = outH;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, outW, outH);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 /* ================= FAMILY ROWS ================= */
@@ -453,7 +474,7 @@ photoInput.addEventListener('change', () => {
   if(!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
-    const small = await compressDataUrl(e.target.result, 800, 'image/jpeg', 0.85);
+    const small = await cropToPassport(e.target.result, 315, 405, 0.85);
     photoState.newDataUrl = small;
     photoState.display = small;
     photoState.removed = false;
