@@ -53,7 +53,7 @@
     line-height:1.5;
     min-height:100vh;
   }
-  body.preview-open,body.house-open{overflow:hidden;}
+  body.preview-open,body.house-open,body.flat-open{overflow:hidden;}
   button,input,select,textarea{font-family:inherit;}
 
   /* ===== icons ===== */
@@ -205,6 +205,10 @@
   .flat-hint{margin-top:8px;font-size:13px;color:var(--green-dark);background:var(--green-tint);border-radius:10px;padding:8px 12px;}
   .house-sub{font-size:12.5px;color:var(--ink-soft);font-weight:600;padding:0 4px;}
   .flats-panel{margin-bottom:18px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .panel-head h3{margin:0;}
+  .flat-table td.act{white-space:nowrap;text-align:right;}
+  .flat-table th:last-child{width:1%;}
   .tbl-wrap{overflow-x:auto;}
   .flat-table{width:100%;border-collapse:collapse;font-size:14px;min-width:480px;}
   .flat-table th{text-align:left;font-size:12.5px;color:var(--ink-soft);padding:8px 10px;border-bottom:2px solid var(--line);}
@@ -364,7 +368,7 @@
     margin-bottom:6px;font-weight:600;
   }
   .field input[type=text],.field input[type=date],.field input[type=tel],
-  .field input[type=email],.field input[type=password],.field textarea,.field select{
+  .field input[type=email],.field input[type=password],.field input[type=number],.field textarea,.field select{
     width:100%;min-height:46px;padding:11px 14px;
     font-size:15px;
     border:1.5px solid #E2DDC8;border-radius:12px;
@@ -456,6 +460,7 @@
   }
   body.preview-open #previewOverlay{display:flex;}
   body.house-open #houseOverlay{display:flex;}
+  body.flat-open #flatOverlay{display:flex;}
   .overlay-inner{width:100%;max-width:900px;animation:pop .22s ease;}
   @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.985);}to{opacity:1;transform:none;}}
   .overlay-toolbar{
@@ -613,7 +618,7 @@
   @media print{
     body{background:#fff !important;overflow:visible !important;}
     .app,.main{display:block !important;}
-    .sidebar,.side-backdrop,.hdr,.view,#houseOverlay,.overlay-toolbar,.close-x,.hint-note,.preview-hint,.toast{display:none !important;}
+    .sidebar,.side-backdrop,.hdr,.view,#houseOverlay,#flatOverlay,.overlay-toolbar,.close-x,.hint-note,.preview-hint,.toast{display:none !important;}
     #previewOverlay{display:block !important;position:static;background:none;padding:0;inset:auto;backdrop-filter:none;}
     .overlay-inner{max-width:100%;padding:0;animation:none;}
     .paper-wrap{overflow:visible;box-shadow:none;background:none;}
@@ -795,9 +800,13 @@
       </div>
       <div class="counter"><span class="n" id="hCount">০</span><span class="l">জন ভাড়াটিয়া</span></div>
     </div>
-    <div class="panel flats-panel" id="flatsPanel" style="display:none;">
-      <h3><svg class="ic"><use href="#i-grid"/></svg>ফ্ল্যাট/তলার তথ্য</h3>
-      <div class="tbl-wrap"><table class="flat-table"><thead><tr><th>ফ্লোর/তলা</th><th>পাশ</th><th>বাসা ভাড়া</th><th>গ্যাস বিল</th><th>ভাড়াটিয়া</th></tr></thead><tbody id="flatsBody"></tbody></table></div>
+    <div class="panel flats-panel" id="flatsPanel">
+      <div class="panel-head">
+        <h3><svg class="ic"><use href="#i-grid"/></svg>ফ্ল্যাট/তলার তথ্য</h3>
+        <button class="btn btn-accent btn-sm" id="addFlatBtn" type="button"><svg class="ic"><use href="#i-plus"/></svg>নতুন ফ্ল্যাট যোগ করুন</button>
+      </div>
+      <div class="empty-state" id="flatsEmpty" style="display:none;">এই বাসায় এখনও কোনো ফ্ল্যাট/তলা যোগ করা হয়নি।<br>"নতুন ফ্ল্যাট যোগ করুন" চেপে ফ্লোর, পাশ, বাসা ভাড়া ও গ্যাস বিল দিন।</div>
+      <div class="tbl-wrap" id="flatsTableWrap"><table class="flat-table"><thead><tr><th>ফ্লোর/তলা</th><th>পাশ</th><th>বাসা ভাড়া</th><th>গ্যাস বিল</th><th>ভাড়াটিয়া</th><th></th></tr></thead><tbody id="flatsBody"></tbody></table></div>
     </div>
     <div class="page-head">
       <div><h2 class="page-title" style="font-size:20px;">ভাড়াটিয়ার তালিকা</h2></div>
@@ -822,12 +831,6 @@
   </div>
 
   <div class="form-panel">
-    <div class="card" id="houseSelectCard">
-      <div class="card-head"><div class="num"><svg class="ic"><use href="#i-home"/></svg></div><div class="title">বাসা নির্বাচন</div></div>
-      <div class="field"><label>কোন বাসার ভাড়াটিয়া?</label><select id="formHouse"></select></div>
-      <div class="card-sub" style="margin:6px 0 0;">বাসা নির্বাচন করলে নিচের "ফ্ল্যাট/তলা" ড্রপডাউনে ওই বাসার ফ্ল্যাটগুলো দেখাবে।</div>
-    </div>
-
     <form id="theForm" autocomplete="off">
 
       <div class="card">
@@ -1118,7 +1121,7 @@
 
 <!-- ===================== HOUSE ADD/EDIT MODAL ===================== -->
 <div class="overlay" id="houseOverlay">
-  <div class="overlay-inner" style="max-width:720px;">
+  <div class="overlay-inner" style="max-width:520px;">
     <div class="overlay-toolbar">
       <h2><svg class="ic"><use href="#i-home"/></svg><span id="houseModalTitle">নতুন বাসা</span></h2>
       <button class="close-x" id="closeHouse" type="button"><svg class="ic"><use href="#i-x"/></svg>বন্ধ করুন</button>
@@ -1126,15 +1129,35 @@
     <div class="card">
       <div class="field"><label>বাসার নাম</label><input type="text" id="houseNameInput" placeholder="যেমনঃ রহমান ভিলা"></div>
       <div class="field"><label>ঠিকানা</label><textarea id="houseAddrInput" placeholder="পুরো ঠিকানা লিখুন"></textarea></div>
-      <div class="sub-label">ফ্ল্যাট/তলার তথ্য</div>
-      <div class="flat-head-row"><div>ফ্লোর/তলা</div><div>পাশ</div><div>বাসা ভাড়া (৳)</div><div>গ্যাস বিল (৳)</div><div></div></div>
-      <div id="flatRows"></div>
-      <button type="button" class="add-row-btn" id="addFlatRow"><svg class="ic"><use href="#i-plus"/></svg>ফ্ল্যাট/তলা যোগ করুন</button>
-      <datalist id="floorList"><option value="নিচতলা"><option value="১ম তলা"><option value="২য় তলা"><option value="৩য় তলা"><option value="৪র্থ তলা"><option value="৫ম তলা"><option value="৬ষ্ঠ তলা"><option value="৭ম তলা"><option value="৮ম তলা"><option value="৯ম তলা"><option value="১০ম তলা"></datalist>
       <div class="btnbar" style="margin-top:14px;">
         <button class="btn btn-accent" id="houseSaveBtn" type="button"><svg class="ic"><use href="#i-save"/></svg>সংরক্ষণ করুন</button>
       </div>
       <p class="login-err" id="houseErr"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FLAT ADD/EDIT MODAL ===================== -->
+<div class="overlay" id="flatOverlay">
+  <div class="overlay-inner" style="max-width:520px;">
+    <div class="overlay-toolbar">
+      <h2><svg class="ic"><use href="#i-grid"/></svg><span id="flatModalTitle">নতুন ফ্ল্যাট/তলা</span></h2>
+      <button class="close-x" id="closeFlat" type="button"><svg class="ic"><use href="#i-x"/></svg>বন্ধ করুন</button>
+    </div>
+    <div class="card">
+      <div class="field"><label>ফ্লোর/তলা</label><input type="text" id="flatFloorInput" list="floorList" placeholder="যেমনঃ ৩য় তলা"></div>
+      <datalist id="floorList"><option value="নিচতলা"><option value="১ম তলা"><option value="২য় তলা"><option value="৩য় তলা"><option value="৪র্থ তলা"><option value="৫ম তলা"><option value="৬ষ্ঠ তলা"><option value="৭ম তলা"><option value="৮ম তলা"><option value="৯ম তলা"><option value="১০ম তলা"></datalist>
+      <div class="row2">
+        <div class="field"><label>পাশ</label>
+          <select id="flatSideInput"><option value="">— নির্বাচন করুন —</option><option>পূর্ব</option><option>পশ্চিম</option><option>উত্তর</option><option>দক্ষিণ</option></select>
+        </div>
+        <div class="field"><label>বাসা ভাড়া (৳)</label><input type="number" inputmode="numeric" min="0" id="flatRentInput" placeholder="যেমনঃ ৮০০০"></div>
+      </div>
+      <div class="field"><label>গ্যাস বিল (৳)</label><input type="number" inputmode="numeric" min="0" id="flatGasInput" placeholder="যেমনঃ ৫০০"></div>
+      <div class="btnbar" style="margin-top:14px;">
+        <button class="btn btn-accent" id="flatSaveBtn" type="button"><svg class="ic"><use href="#i-save"/></svg>সংরক্ষণ করুন</button>
+      </div>
+      <p class="login-err" id="flatErr"></p>
     </div>
   </div>
 </div>
