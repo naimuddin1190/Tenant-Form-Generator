@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
+  getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, runTransaction, increment, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 // =====================================================================
@@ -9,7 +9,7 @@ import {
 //  Firebase Console → Project settings → Your apps → Web app (</>)
 //  থেকে কনফিগ কপি করে নিচের মানগুলো বদলে দিন।
 // =====================================================================
- const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyAQX7UnuNHrC4qq85pN9qUdb1X7OcUhwUE",
     authDomain: "tenant-form-generator.firebaseapp.com",
     projectId: "tenant-form-generator",
@@ -91,17 +91,139 @@ let sigState = newImgState();
 
 function getHouse(id){ return houses.find(h => h.id === id) || null; }
 
+/* ================= SETTINGS (সেটিংস — Firestore: settings/app) ================= */
+const DEFAULT_SETTINGS = {
+  siteName: 'অস্থায়ী ভাড়াটিয়া চুক্তিপত্র',
+  siteSubtitle: 'বাসা ব্যবস্থাপনা সিস্টেম',
+  docTitle: 'অস্থায়ী ভাড়াটিয়া চুক্তিপত্র',
+  adminName: 'অ্যাডমিন',
+  paper: 'a4',
+  logo: null
+};
+let settings = Object.assign({}, DEFAULT_SETTINGS);
+let settingsUnsub = null;
+let logoDraft; // undefined = অপরিবর্তিত, null = সরানো হয়েছে, string = নতুন লোগো
+let brandMarkOriginal = null;
+let docLogoOriginal = null;
+
+function applySettings(){
+  const s = settings;
+  document.title = s.siteName || DEFAULT_SETTINGS.siteName;
+  const bn = $('brandName'), bs = $('brandSub'), dt = $('docTitle');
+  if(bn) bn.textContent = s.siteName;
+  if(bs) bs.textContent = s.siteSubtitle;
+  if(dt) dt.textContent = s.docTitle;
+  const ha = $('hdrAdmin'), hv = $('hdrAvatar');
+  if(ha) ha.textContent = s.adminName;
+  if(hv) hv.textContent = Array.from(s.adminName || 'A')[0] || 'A';
+  const bm = $('brandMark'), dl = $('docLogo');
+  if(bm && brandMarkOriginal === null) brandMarkOriginal = bm.innerHTML;
+  if(dl && docLogoOriginal === null) docLogoOriginal = dl.getAttribute('src');
+  if(bm) bm.innerHTML = s.logo ? '<img src="' + esc(s.logo) + '" alt="লোগো">' : brandMarkOriginal;
+  if(dl) dl.setAttribute('src', s.logo || docLogoOriginal);
+  const ps = $('paperSizeSelect');
+  if(ps && s.paper) ps.value = s.paper;
+  updateHeaderTitle();
+}
+function startSettingsListener(){
+  stopSettingsListener();
+  settingsUnsub = onSnapshot(doc(db, 'settings', 'app'), snap => {
+    settings = Object.assign({}, DEFAULT_SETTINGS, snap.exists() ? snap.data() : {});
+    applySettings();
+  }, err => { console.error(err); });
+}
+function stopSettingsListener(){ if(settingsUnsub){ settingsUnsub(); settingsUnsub = null; } }
+function paintLogoPrev(){
+  const src = logoDraft === undefined ? settings.logo : logoDraft;
+  $('setLogoPrev').innerHTML = src
+    ? '<img src="' + esc(src) + '" alt="লোগো">'
+    : '<span class="logo-none">লোগো নেই</span>';
+}
+function fillSettingsForm(){
+  $('setSiteName').value = settings.siteName || '';
+  $('setSiteSub').value = settings.siteSubtitle || '';
+  $('setDocTitle').value = settings.docTitle || '';
+  $('setAdminName').value = settings.adminName || '';
+  $('setPaper').value = settings.paper || 'a4';
+  $('setMsg').textContent = '';
+  logoDraft = undefined;
+  paintLogoPrev();
+}
+function showSettings(){
+  showView('viewSettings');
+  currentHouseId = null;
+  fillSettingsForm();
+}
+
+/* ================= SIDEBAR (বাসা সমূহ + সেটিংস + ভবিষ্যৎ সেকশন) ================= */
+// ভবিষ্যতে নতুন সেকশন যোগ করতে নিচের তালিকায় একটি অবজেক্ট বসান, যেমন:
+//   { id:'x', title:'সেকশনের নাম', items:[ { label:'আইটেম', icon:'i-home', hash:'#/x', active: () => activeView === 'viewX', badge: () => '৫' } ] }
+// (নতুন পেজ হলে index.html-এ একটি <section class="view" id="viewX"> ও showView/route-এ যোগ করতে হবে)
+const NAV_SECTIONS = [
+  { id:'main', title:'প্রধান', items:[
+    { label:'ড্যাশবোর্ড', icon:'i-grid', hash:'#/', active: () => activeView === 'viewHome' },
+    { label:'বাসা সমূহ', icon:'i-home', hash:'#/houses',
+      active: () => ['viewHouses','viewHouse'].includes(activeView) || (activeView === 'viewForm' && /\/edit\//.test(location.hash)),
+      badge: () => toBn(houses.length) },
+    { label:'নতুন ভাড়াটিয়া ফর্ম', icon:'i-file', hash:'#/tenant',
+      active: () => activeView === 'viewForm' && !/\/edit\//.test(location.hash) }
+  ] },
+  { id:'system', title:'সিস্টেম', items:[
+    { label:'সেটিংস', icon:'i-settings', hash:'#/settings', active: () => activeView === 'viewSettings' }
+  ] },
+];
+function navButton(label, icon, extraClass, onClick, badge){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'nav-item' + (extraClass ? ' ' + extraClass : '');
+  b.innerHTML = '<svg class="ic"><use href="#' + icon + '"/></svg><span class="nav-label"></span>' + (badge != null ? '<span class="nav-count">' + esc(badge) + '</span>' : '');
+  b.querySelector('.nav-label').textContent = label;
+  b.addEventListener('click', () => { body.classList.remove('side-open'); onClick(); });
+  return b;
+}
+function updateHeaderTitle(){
+  const el = $('pageTitle');
+  if(!el) return;
+  const h = getHouse(currentHouseId);
+  let t = settings.siteName || DEFAULT_SETTINGS.siteName;
+  if(currentUser){
+    if(activeView === 'viewHome') t = 'ড্যাশবোর্ড';
+    else if(activeView === 'viewHouses') t = 'বাসা সমূহ';
+    else if(activeView === 'viewSettings') t = 'সেটিংস';
+    else if(activeView === 'viewHouse') t = h ? 'বাসা: ' + h.name : 'বাসা';
+    else if(activeView === 'viewForm') t = (/\/edit\//.test(location.hash) ? 'ভাড়াটিয়ার ফর্ম আপডেট' : 'নতুন ভাড়াটিয়া ফর্ম') + (h ? ' — ' + h.name : '');
+  }
+  el.textContent = t;
+}
+function renderSidebar(){
+  const nav = $('sideNav');
+  if(!nav) return;
+  nav.innerHTML = '';
+  NAV_SECTIONS.forEach(sec => {
+    const t = document.createElement('div');
+    t.className = 'nav-title';
+    t.textContent = sec.title;
+    nav.appendChild(t);
+    (sec.items || []).forEach(it => {
+      const isActive = it.active ? it.active() : location.hash === it.hash;
+      nav.appendChild(navButton(it.label, it.icon, isActive ? 'active' : '', () => go(it.hash), it.badge ? it.badge() : null));
+    });
+  });
+  updateHeaderTitle();
+}
+
 /* ================= VIEWS / ROUTER ================= */
 function showView(name){
   activeView = name;
-  ['viewLogin','viewHome','viewHouse','viewForm'].forEach(v => $(v).classList.toggle('active', v === name));
+  ['viewLogin','viewHome','viewHouses','viewSettings','viewHouse','viewForm'].forEach(v => $(v).classList.toggle('active', v === name));
   if(name !== 'viewHouse') stopTenantsListener();
-  body.classList.remove('preview-open','house-open');
+  body.classList.remove('preview-open','house-open','side-open');
   window.scrollTo(0, 0);
 }
 function go(hash){ if(location.hash === hash) route(); else location.hash = hash; }
 
-function route(){
+function route(){ routeInner(); renderSidebar(); }
+function routeInner(){
   if(!authReady) return;
   if(!currentUser){ showView('viewLogin'); return; }
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -109,6 +231,12 @@ function route(){
     if(parts[2] === 'new') openForm(parts[1], null);
     else if(parts[2] === 'edit' && parts[3]) openForm(parts[1], parts[3]);
     else showHouse(parts[1]);
+  } else if(parts[0] === 'tenant'){
+    openForm(null, null);
+  } else if(parts[0] === 'houses'){
+    showHouses();
+  } else if(parts[0] === 'settings'){
+    showSettings();
   } else {
     showHome();
   }
@@ -121,7 +249,7 @@ if(configured){
     currentUser = user;
     authReady = true;
     body.classList.toggle('authed', !!user);
-    if(user) startHousesListener(); else stopAllListeners();
+    if(user){ startHousesListener(); startSettingsListener(); } else stopAllListeners();
     route();
   });
 } else {
@@ -149,7 +277,11 @@ $('logoutBtn').addEventListener('click', async () => {
   if(!confirm('লগআউট করতে চান?')) return;
   try{ await signOut(auth); location.hash = '#/'; }catch(ex){ showToast(fbErr(ex)); }
 });
-$('homeBtn').addEventListener('click', () => go('#/'));
+$('menuBtn').addEventListener('click', () => {
+  if(window.matchMedia('(max-width:900px)').matches) body.classList.toggle('side-open');
+  else body.classList.toggle('side-collapsed');
+});
+$('sideBackdrop').addEventListener('click', () => body.classList.remove('side-open'));
 $('brandHome').addEventListener('click', () => { if(currentUser) go('#/'); });
 
 /* ================= HOUSES (dashboard) ================= */
@@ -163,56 +295,170 @@ function startHousesListener(){
     houses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     housesLoaded = true;
     resolve();
+    renderSidebar();
     if(activeView === 'viewHome') renderHome();
+    else if(activeView === 'viewHouses') renderHousesPage();
+    else if(activeView === 'viewForm') refreshFormHouses();
     else if(activeView === 'viewHouse') renderHouseHeader();
   }, err => {
     console.error(err);
     housesLoaded = true; resolve();
     showToast('বাসার তালিকা আনতে সমস্যা: ' + fbErr(err));
     if(activeView === 'viewHome') renderHome();
+    else if(activeView === 'viewHouses') renderHousesPage();
+    else if(activeView === 'viewForm') refreshFormHouses();
   });
 }
 function stopHousesListener(){ if(housesUnsub){ housesUnsub(); housesUnsub = null; } houses = []; }
 function stopTenantsListener(){ if(tenantsUnsub){ tenantsUnsub(); tenantsUnsub = null; } tenants = []; }
-function stopAllListeners(){ stopHousesListener(); stopTenantsListener(); housesLoaded = false; }
+function stopAllListeners(){ stopHousesListener(); stopTenantsListener(); stopSettingsListener(); housesLoaded = false; }
 
 function showHome(){
   showView('viewHome');
   currentHouseId = null;
   renderHome();
 }
-function renderHome(){
-  const grid = $('houseGrid');
-  $('statHouses').textContent = toBn(houses.length);
-  $('statTenants').textContent = toBn(houses.reduce((s, h) => s + (Number(h.tenantCount) || 0), 0));
+function houseCard(h, manage){
+  const card = document.createElement('div');
+  card.className = 'house-card';
+  card.innerHTML =
+    '<div class="house-top"><div class="house-ic"><svg class="ic"><use href="#i-home"/></svg></div>' +
+      '<div class="house-meta"><b>বাসা: ' + esc(h.name) + '</b>' +
+      '<small><svg class="ic"><use href="#i-pin"/></svg><span>' + esc(h.address || 'ঠিকানা দেওয়া নেই') + '</span></small></div></div>' +
+    '<div class="house-count"><span>ভাড়াটিয়া সংখ্যা:</span><span class="n">' + toBn(h.tenantCount || 0) + '</span><span>জন</span></div>' +
+    '<div class="house-sub">ফ্ল্যাট/তলা ' + toBn(houseFlats(h).length) + 'টি' + (houseFlats(h).some(f => f.rent != null) ? ' • মোট মাসিক ভাড়া ' + fmtMoney(houseFlats(h).reduce((s, f) => s + (Number(f.rent) || 0), 0)) : '') + '</div>' +
+    '<div class="house-actions">' +
+      '<button class="btn btn-primary btn-sm" data-act="open"><svg class="ic"><use href="#i-users"/></svg>খুলুন</button>' +
+      (manage ? '<button class="btn btn-outline btn-sm" data-act="edit"><svg class="ic"><use href="#i-edit"/></svg>এডিট</button>' +
+                '<button class="btn btn-danger btn-sm" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>মুছুন</button>' : '') +
+    '</div>';
+  card.addEventListener('click', () => go('#/house/' + h.id));
+  card.querySelector('[data-act=open]').addEventListener('click', e => { e.stopPropagation(); go('#/house/' + h.id); });
+  if(manage){
+    card.querySelector('[data-act=edit]').addEventListener('click', e => { e.stopPropagation(); openHouseModal(h); });
+    card.querySelector('[data-act=delete]').addEventListener('click', e => { e.stopPropagation(); deleteHouse(h); });
+  }
+  return card;
+}
+function fillHouseGrid(grid, manage, emptyMsg){
   if(!housesLoaded){
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">☁️ লোড হচ্ছে...</div>';
     return;
   }
   if(!houses.length){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">এখনও কোনো বাসা যোগ করা হয়নি।<br>উপরের "নতুন বাসা যোগ করুন" বাটনে ক্লিক করে প্রথম বাসা বানান।</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">' + emptyMsg + '</div>';
     return;
   }
   grid.innerHTML = '';
-  houses.forEach(h => {
-    const card = document.createElement('div');
-    card.className = 'house-card';
-    card.innerHTML =
-      '<div class="house-top"><div class="house-ic"><svg class="ic"><use href="#i-home"/></svg></div>' +
-        '<div class="house-meta"><b>বাসা: ' + esc(h.name) + '</b>' +
-        '<small><svg class="ic"><use href="#i-pin"/></svg><span>' + esc(h.address || 'ঠিকানা দেওয়া নেই') + '</span></small></div></div>' +
-      '<div class="house-count"><span>ভাড়াটিয়া সংখ্যা:</span><span class="n">' + toBn(h.tenantCount || 0) + '</span><span>জন</span></div>' +
-      '<div class="house-actions">' +
-        '<button class="btn btn-primary btn-sm" data-act="open"><svg class="ic"><use href="#i-users"/></svg>খুলুন</button>' +
-        '<button class="btn btn-outline btn-sm" data-act="edit"><svg class="ic"><use href="#i-edit"/></svg>এডিট</button>' +
-        '<button class="btn btn-danger btn-sm" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>মুছুন</button>' +
-      '</div>';
-    card.addEventListener('click', () => go('#/house/' + h.id));
-    card.querySelector('[data-act=open]').addEventListener('click', e => { e.stopPropagation(); go('#/house/' + h.id); });
-    card.querySelector('[data-act=edit]').addEventListener('click', e => { e.stopPropagation(); openHouseModal(h); });
-    card.querySelector('[data-act=delete]').addEventListener('click', e => { e.stopPropagation(); deleteHouse(h); });
-    grid.appendChild(card);
+  houses.forEach(h => grid.appendChild(houseCard(h, manage)));
+}
+// ড্যাশবোর্ড: শুধু তথ্য দেখা যাবে (ক্লিক/এডিট/মুছা কিছুই নেই)
+const DASH_COLORS = ['#1F8A55','#2F6FDB','#E0A82E','#7A4FD6','#E0536A','#16A5A5','#E07B2F','#8A9A2B'];
+function updateClock(){
+  const d = new Date();
+  const dt = $('dashDate'), ck = $('dashClock');
+  if(dt) dt.textContent = d.toLocaleDateString('bn-BD', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  if(ck) ck.textContent = d.toLocaleTimeString('bn-BD', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(() => { if(activeView === 'viewHome') updateClock(); }, 1000);
+function renderHome(){
+  updateClock();
+  const total = houses.reduce((s, h) => s + (Number(h.tenantCount) || 0), 0);
+  const maxH = houses.reduce((m, h) => (Number(h.tenantCount) || 0) > (m ? Number(m.tenantCount) || 0 : -1) ? h : m, null);
+  $('statHouses').textContent = toBn(houses.length);
+  $('statTenants').textContent = toBn(total);
+  $('statAvg').textContent = toBn(houses.length ? (total / houses.length).toFixed(1) : 0);
+  $('statTop').textContent = toBn(maxH ? (Number(maxH.tenantCount) || 0) : 0);
+  $('statTopName').textContent = maxH && (Number(maxH.tenantCount) || 0) > 0 ? maxH.name : '—';
+
+  const bars = $('dashBars'), donut = $('dashDonut'), legend = $('dashLegend');
+  if(!housesLoaded){
+    bars.innerHTML = '<div class="empty-state">☁️ লোড হচ্ছে...</div>';
+    donut.style.background = '#E8EEE6'; legend.innerHTML = '';
+    $('donutTotal').textContent = toBn(0);
+    return;
+  }
+  if(!houses.length){
+    bars.innerHTML = '<div class="empty-state">এখনও কোনো বাসা যোগ করা হয়নি।<br>বাম পাশের "বাসা সমূহ" এ গিয়ে প্রথম বাসা যোগ করুন।</div>';
+    donut.style.background = '#E8EEE6'; legend.innerHTML = '';
+    $('donutTotal').textContent = toBn(0);
+    return;
+  }
+  const max = Math.max(1, ...houses.map(h => Number(h.tenantCount) || 0));
+  bars.innerHTML = houses.map((h, i) => {
+    const c = Number(h.tenantCount) || 0;
+    const w = c ? Math.max(4, Math.round(c / max * 100)) : 0;
+    return '<div class="bar-row"><div class="bar-ic"><svg class="ic"><use href="#i-home"/></svg></div>' +
+      '<div class="bar-main"><b>বাসা: ' + esc(h.name) + '</b><small>' + esc(h.address || 'ঠিকানা দেওয়া নেই') + '</small>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + w + '%;background:' + DASH_COLORS[i % DASH_COLORS.length] + '"></div></div></div>' +
+      '<div class="bar-count">' + toBn(c) + ' জন</div></div>';
+  }).join('');
+  let acc = 0;
+  const stops = [];
+  houses.forEach((h, i) => {
+    const c = Number(h.tenantCount) || 0;
+    if(!c || !total) return;
+    const from = acc / total * 360; acc += c; const to = acc / total * 360;
+    stops.push(DASH_COLORS[i % DASH_COLORS.length] + ' ' + from.toFixed(2) + 'deg ' + to.toFixed(2) + 'deg');
   });
+  donut.style.background = stops.length ? 'conic-gradient(' + stops.join(',') + ')' : '#E8EEE6';
+  $('donutTotal').textContent = toBn(total);
+  legend.innerHTML = houses.map((h, i) =>
+    '<div><i style="background:' + DASH_COLORS[i % DASH_COLORS.length] + '"></i><span class="n">' + esc(h.name) + '</span><b>' + toBn(Number(h.tenantCount) || 0) + '</b></div>'
+  ).join('');
+}
+// বাসা সমূহ সেকশন: নতুন বাসা যোগ + এডিট/মুছা
+function showHouses(){
+  showView('viewHouses');
+  currentHouseId = null;
+  renderHousesPage();
+}
+function renderHousesPage(){
+  fillHouseGrid($('housesManageGrid'), true, 'এখনও কোনো বাসা নেই।<br>উপরের "নতুন বাসা যোগ করুন" চেপে প্রথম বাসা বানান।');
+}
+
+/* ---- বাসার তথ্য: ফ্ল্যাট/তলা, পাশ, ভাড়া, গ্যাস বিল ---- */
+let tenantsLoadedFor = null;
+function flatLabel(f){ return (f.floor || '') + (f.side ? ' — ' + f.side + ' পাশ' : ''); }
+function fmtMoney(n){ return '৳' + toBn((Number(n) || 0).toLocaleString('en-US')); }
+function houseFlats(h){ return (h && Array.isArray(h.flats)) ? h.flats : []; }
+
+const flatRows = $('flatRows');
+function addFlatRow(v){
+  v = v || {};
+  const row = document.createElement('div');
+  row.className = 'flat-row';
+  row.innerHTML =
+    '<input type="text" list="floorList" placeholder="যেমনঃ ৩য় তলা" data-f="floor">' +
+    '<select data-f="side"><option value="">পাশ</option><option>পূর্ব</option><option>পশ্চিম</option><option>উত্তর</option><option>দক্ষিণ</option></select>' +
+    '<input type="number" inputmode="numeric" min="0" placeholder="বাসা ভাড়া" data-f="rent">' +
+    '<input type="number" inputmode="numeric" min="0" placeholder="গ্যাস বিল" data-f="gas">' +
+    '<button type="button" class="fam-remove" title="মুছে ফেলুন" aria-label="মুছে ফেলুন">×</button>';
+  flatRows.appendChild(row);
+  row.querySelector('[data-f=floor]').value = v.floor || '';
+  row.querySelector('[data-f=side]').value = v.side || '';
+  row.querySelector('[data-f=rent]').value = v.rent != null ? v.rent : '';
+  row.querySelector('[data-f=gas]').value = v.gas != null ? v.gas : '';
+  row.querySelector('.fam-remove').addEventListener('click', () => row.remove());
+}
+$('addFlatRow').addEventListener('click', () => addFlatRow());
+function collectFlats(){
+  const rows = Array.from(flatRows.querySelectorAll('.flat-row'));
+  const flats = [], seen = new Set();
+  for(const row of rows){
+    const floor = row.querySelector('[data-f=floor]').value.trim();
+    const side = row.querySelector('[data-f=side]').value;
+    const rentV = row.querySelector('[data-f=rent]').value.trim();
+    const gasV = row.querySelector('[data-f=gas]').value.trim();
+    if(!floor && !side && !rentV && !gasV) continue;
+    if(!floor) return { error: 'প্রতিটি ফ্ল্যাটের জন্য ফ্লোর/তলা লিখতে হবে।' };
+    const f = { floor, side, rent: rentV === '' ? null : Number(rentV), gas: gasV === '' ? null : Number(gasV) };
+    const key = flatLabel(f);
+    if(seen.has(key)) return { error: '"' + key + '" দুইবার দেওয়া হয়েছে।' };
+    seen.add(key);
+    flats.push(f);
+  }
+  return { flats };
 }
 
 /* ---- add / edit house modal ---- */
@@ -222,6 +468,9 @@ function openHouseModal(h){
   $('houseNameInput').value = h ? (h.name || '') : '';
   $('houseAddrInput').value = h ? (h.address || '') : '';
   $('houseErr').textContent = '';
+  flatRows.innerHTML = '';
+  const fl = houseFlats(h);
+  if(fl.length) fl.forEach(f => addFlatRow(f)); else addFlatRow();
   body.classList.add('house-open');
   setTimeout(() => $('houseNameInput').focus(), 80);
 }
@@ -234,13 +483,15 @@ $('houseSaveBtn').addEventListener('click', async () => {
   const err = $('houseErr');
   if(!name){ err.textContent = 'বাসার নাম দিতে হবে।'; return; }
   if(!address){ err.textContent = 'ঠিকানা দিতে হবে।'; return; }
+  const fr = collectFlats();
+  if(fr.error){ err.textContent = fr.error; return; }
   const btn = $('houseSaveBtn');
   btn.disabled = true;
   try{
     if(editingHouseId){
-      await updateDoc(doc(db, 'houses', editingHouseId), { name, address });
+      await updateDoc(doc(db, 'houses', editingHouseId), { name, address, flats: fr.flats });
     } else {
-      await addDoc(collection(db, 'houses'), { name, address, createdAt: Date.now(), tenantCount: 0, nextSerial: 1 });
+      await addDoc(collection(db, 'houses'), { name, address, flats: fr.flats, createdAt: Date.now(), tenantCount: 0, nextSerial: 1 });
     }
     body.classList.remove('house-open');
     showToast('বাসা সংরক্ষণ করা হয়েছে।');
@@ -281,13 +532,14 @@ async function showHouse(id){
   $('tenantList').innerHTML = '<div class="empty-state">☁️ লোড হচ্ছে...</div>';
   await housesReady;
   if(currentHouseId !== id) return;
-  if(!getHouse(id)){ showToast('বাসাটি খুঁজে পাওয়া যায়নি।'); go('#/'); return; }
+  if(!getHouse(id)){ showToast('বাসাটি খুঁজে পাওয়া যায়নি।'); go('#/houses'); return; }
   renderHouseHeader();
   stopTenantsListener();
   const q = query(collection(db, 'houses', id, 'tenants'), orderBy('serial', 'asc'));
   tenantsUnsub = onSnapshot(q, snap => {
     if(currentHouseId !== id) return;
     tenants = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    tenantsLoadedFor = id;
     renderHouseHeader();
     renderTenantList();
     const h = getHouse(id);
@@ -305,6 +557,20 @@ function renderHouseHeader(){
   $('hName').textContent = 'বাসা: ' + h.name;
   $('hAddr').textContent = h.address || '';
   $('hCount').textContent = toBn(tenantsUnsub ? tenants.length : (h.tenantCount || 0));
+  renderFlatsPanel();
+}
+function renderFlatsPanel(){
+  const h = getHouse(currentHouseId), panel = $('flatsPanel');
+  const flats = houseFlats(h);
+  if(!h || !flats.length){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const loaded = tenantsLoadedFor === currentHouseId;
+  $('flatsBody').innerHTML = flats.map(f => {
+    const label = flatLabel(f);
+    const occ = tenants.filter(t => t.data && t.data.flat === label).map(t => esc(t.label || 'নামহীন'));
+    const who = !loaded ? '…' : (occ.length ? occ.join(', ') : '<span class="tag-vacant">খালি</span>');
+    return '<tr><td><b>' + esc(f.floor) + '</b></td><td>' + esc(f.side || '—') + '</td><td>' + (f.rent != null ? fmtMoney(f.rent) : '—') + '</td><td>' + (f.gas != null ? fmtMoney(f.gas) : '—') + '</td><td>' + who + '</td></tr>';
+  }).join('');
 }
 function renderTenantList(){
   const wrap = $('tenantList');
@@ -352,9 +618,9 @@ async function deleteTenant(item){
     alert('মুছতে সমস্যা হয়েছে: ' + fbErr(ex));
   }
 }
-$('backHomeBtn').addEventListener('click', () => go('#/'));
+$('backHomeBtn').addEventListener('click', () => go('#/houses'));
 $('newTenantBtn').addEventListener('click', () => go('#/house/' + currentHouseId + '/new'));
-$('backToHouseBtn').addEventListener('click', () => go('#/house/' + currentHouseId));
+$('backToHouseBtn').addEventListener('click', () => go(currentHouseId ? '#/house/' + currentHouseId : '#/houses'));
 
 /* ================= IMAGE HELPERS ================= */
 function compressDataUrl(dataUrl, maxDim, mime, quality){
@@ -587,10 +853,12 @@ function collectPreviewData(){
 }
 function fillFields(data){
   form.reset();
+  if(data && data.flat) ensureFlatOption(data.flat);
   fields.forEach(f => { if(data && data[f.dataset.key] !== undefined) f.value = data[f.dataset.key]; });
   famRows.innerHTML = '';
   if(data && data.family && data.family.length) data.family.forEach(r => addFamRow(r));
   else { addFamRow(); addFamRow(); addFamRow(); }
+  updateFlatHint();
 }
 function applyImageStates(){
   paintPhotoDrop();
@@ -654,13 +922,12 @@ function paintPreview(data){
   setImgIn($('p_signatureImgWrap'), data.signature, 'স্বাক্ষর', '');
 }
 
-/* ================= DRAFT (new forms only, text fields, survives accidental reload) ================= */
-function draftKey(){ return 'tf_draft_' + currentHouseId; }
+/* ================= DRAFT (নতুন ফর্ম, রিলোডে হারিয়ে যাওয়া ঠেকাতে) ================= */
 function saveDraft(){
-  if(editingTenant || !currentHouseId || activeView !== 'viewForm') return;
-  try{ sessionStorage.setItem(draftKey(), JSON.stringify(collectData())); }catch(e){}
+  if(editingTenant || activeView !== 'viewForm') return;
+  try{ sessionStorage.setItem('tf_draft_new', JSON.stringify({ houseId: currentHouseId, data: collectData() })); }catch(e){}
 }
-function clearDraft(){ try{ sessionStorage.removeItem('tf_draft_' + currentHouseId); }catch(e){} }
+function clearDraft(){ try{ sessionStorage.removeItem('tf_draft_new'); }catch(e){} }
 
 function onLiveInput(){
   viewingSavedItem = null;
@@ -670,22 +937,79 @@ function onLiveInput(){
 form.addEventListener('input', onLiveInput);
 form.addEventListener('change', onLiveInput);
 
-/* ================= FORM VIEW ================= */
+/* ================= FORM VIEW (সাইডবারের আলাদা সেকশন: নতুন ভাড়াটিয়া ফর্ম) ================= */
+function populateHouseSelect(selectedId, locked){
+  const sel = $('formHouse');
+  sel.innerHTML = '<option value="">— বাসা নির্বাচন করুন —</option>' +
+    houses.map(h => '<option value="' + esc(h.id) + '">' + esc(h.name) + '</option>').join('');
+  sel.value = selectedId || '';
+  sel.disabled = !!locked;
+}
+function ensureFlatOption(val){
+  const sel = $('flatSelect');
+  if(!val) return;
+  if(!Array.from(sel.options).some(o => o.value === val)){
+    const o = document.createElement('option');
+    o.value = val; o.textContent = val;
+    sel.appendChild(o);
+  }
+}
+// নির্বাচিত বাসার তথ্য থেকে ফ্ল্যাট/তলার ড্রপডাউন বানায়
+function populateFlatSelect(keep){
+  const sel = $('flatSelect');
+  const h = getHouse(currentHouseId);
+  const flats = houseFlats(h);
+  let ph = 'আগে বাসা নির্বাচন করুন';
+  if(h) ph = flats.length ? '— ফ্ল্যাট/তলা নির্বাচন করুন —' : 'এই বাসায় ফ্ল্যাটের তথ্য নেই (বাসা সমূহ থেকে যোগ করুন)';
+  sel.innerHTML = '<option value="">' + esc(ph) + '</option>' +
+    flats.map(f => { const l = flatLabel(f); return '<option value="' + esc(l) + '">' + esc(l) + '</option>'; }).join('');
+  if(keep){ ensureFlatOption(keep); sel.value = keep; }
+}
+function updateFlatHint(){
+  const el = $('flatHint');
+  if(!el) return;
+  const v = $('flatSelect').value;
+  if(!v){ el.style.display = 'none'; return; }
+  const f = houseFlats(getHouse(currentHouseId)).find(x => flatLabel(x) === v);
+  el.style.display = 'block';
+  el.innerHTML = f
+    ? 'বাসা ভাড়া: <b>' + (f.rent != null ? fmtMoney(f.rent) : '—') + '</b> &nbsp;•&nbsp; গ্যাস বিল: <b>' + (f.gas != null ? fmtMoney(f.gas) : '—') + '</b>'
+    : 'এই ফ্ল্যাটের তথ্য বাসার তালিকায় পাওয়া যায়নি।';
+}
+function refreshFormHouses(){
+  if(saving) return;
+  populateHouseSelect(currentHouseId, !!editingTenant || /\/edit\//.test(location.hash));
+  populateFlatSelect($('flatSelect').value);
+  updateFlatHint();
+  updateFormBanner();
+}
+$('formHouse').addEventListener('change', e => {
+  if(editingTenant) return;
+  currentHouseId = e.target.value || null;
+  populateFlatSelect('');
+  updateFlatHint();
+  updateFormBanner();
+  updateHeaderTitle();
+  saveDraft();
+});
+$('flatSelect').addEventListener('change', updateFlatHint);
+
 async function openForm(houseId, tenantId){
   showView('viewForm');
-  currentHouseId = houseId;
   editingTenant = null;
   viewingSavedItem = null;
+  currentHouseId = houseId || null;
   await housesReady;
-  if(currentHouseId !== houseId) return;
-  const house = getHouse(houseId);
-  if(!house){ showToast('বাসাটি খুঁজে পাওয়া যায়নি।'); go('#/'); return; }
+  if(activeView !== 'viewForm') return;
+  if(houseId && !getHouse(houseId)){ showToast('বাসাটি খুঁজে পাওয়া যায়নি।'); go('#/houses'); return; }
 
   if(tenantId){
     $('editBannerTxt').textContent = '⏳ লোড হচ্ছে...';
+    populateHouseSelect(houseId, true);
+    populateFlatSelect('');
     try{
       const snap = await getDoc(doc(db, 'houses', houseId, 'tenants', tenantId));
-      if(currentHouseId !== houseId) return;
+      if(activeView !== 'viewForm' || currentHouseId !== houseId) return;
       if(!snap.exists()){ showToast('ফর্মটি খুঁজে পাওয়া যায়নি।'); go('#/house/' + houseId); return; }
       editingTenant = { id: snap.id, ...snap.data() };
       await fillFromTenant(editingTenant);
@@ -697,28 +1021,35 @@ async function openForm(houseId, tenantId){
     }
   } else {
     blankForm();
-    try{
-      const raw = sessionStorage.getItem(draftKey());
-      if(raw){ fillFields(JSON.parse(raw)); }
-    }catch(e){}
+    let draft = null;
+    try{ draft = JSON.parse(sessionStorage.getItem('tf_draft_new') || 'null'); }catch(e){}
+    let hid = houseId || (draft && draft.houseId) || null;
+    if(hid && !getHouse(hid)) hid = null;
+    currentHouseId = hid;
+    populateHouseSelect(hid, false);
+    populateFlatSelect('');
+    if(draft && draft.data && (!houseId || draft.houseId === houseId)) fillFields(draft.data);
+    updateFlatHint();
   }
-  updateFormBanner(house);
+  updateFormBanner();
+  updateHeaderTitle();
   window.scrollTo(0, 0);
 }
-function updateFormBanner(house){
-  house = house || getHouse(currentHouseId);
+function updateFormBanner(){
+  const house = getHouse(currentHouseId);
   const hn = house ? house.name : '';
   if(editingTenant){
     $('editBannerTxt').textContent = '✏️ "' + (editingTenant.label || '') + '" এর ফর্ম আপডেট করছেন — বাসা: ' + hn;
     $('saveBtnLabel').textContent = 'আপডেট সংরক্ষণ করুন';
   } else {
-    $('editBannerTxt').textContent = '🏠 নতুন ভাড়াটিয়ার ফর্ম — বাসা: ' + hn;
+    $('editBannerTxt').textContent = '🏠 নতুন ভাড়াটিয়ার ফর্ম' + (hn ? ' — বাসা: ' + hn : ' — প্রথমে বাসা নির্বাচন করুন');
     $('saveBtnLabel').textContent = 'সংরক্ষণ করুন';
   }
 }
 
 $('saveFormBtn').addEventListener('click', async () => {
   if(saving) return;
+  if(!currentHouseId){ alert('আগে "বাসা নির্বাচন" থেকে বাসা বেছে নিন।'); return; }
   const btn = $('saveFormBtn');
   const original = btn.innerHTML;
   const data = collectData();
@@ -775,6 +1106,8 @@ $('resetBtn').addEventListener('click', async () => {
     if(!confirm('বর্তমান ফর্মের সব তথ্য মুছে ফেলতে চান?')) return;
     clearDraft();
     blankForm();
+    populateHouseSelect(currentHouseId, false);
+    populateFlatSelect('');
   }
   onLiveInput();
 });
@@ -924,6 +1257,54 @@ $('whatsappPdfBtn').addEventListener('click', async e => {
     btn.disabled = false;
     shareFile(blob, fileNameBase() + '.pdf', 'application/pdf', btn);
   }catch(err){ console.error(err); btn.disabled = false; alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।'); }
+});
+
+
+/* ================= SETTINGS PAGE HANDLERS ================= */
+$('setLogoPick').addEventListener('click', () => $('setLogoInput').click());
+$('setLogoInput').addEventListener('change', () => {
+  const f = $('setLogoInput').files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = async e => {
+    logoDraft = await compressDataUrl(e.target.result, 260, 'image/png', 0.92);
+    paintLogoPrev();
+  };
+  r.readAsDataURL(f);
+  $('setLogoInput').value = '';
+});
+$('setLogoRemove').addEventListener('click', () => { logoDraft = null; paintLogoPrev(); });
+$('setSaveBtn').addEventListener('click', async () => {
+  const msg = $('setMsg');
+  const siteName = $('setSiteName').value.trim();
+  if(!siteName){ msg.textContent = 'ওয়েবসাইটের নাম দিতে হবে।'; return; }
+  const logo = logoDraft === undefined ? (settings.logo || null) : logoDraft;
+  if(logo && logo.length > 600000){ msg.textContent = 'লোগোর সাইজ বেশি — ছোট ছবি ব্যবহার করুন।'; return; }
+  const payload = {
+    siteName,
+    siteSubtitle: $('setSiteSub').value.trim(),
+    docTitle: $('setDocTitle').value.trim() || siteName,
+    adminName: $('setAdminName').value.trim() || DEFAULT_SETTINGS.adminName,
+    paper: $('setPaper').value === 'legal' ? 'legal' : 'a4',
+    logo
+  };
+  const btn = $('setSaveBtn'); btn.disabled = true; msg.textContent = '';
+  try{
+    await setDoc(doc(db, 'settings', 'app'), payload);
+    settings = Object.assign({}, DEFAULT_SETTINGS, payload);
+    applySettings(); fillSettingsForm();
+    showToast('সেটিংস সংরক্ষণ করা হয়েছে।');
+  }catch(ex){ console.error(ex); msg.textContent = 'সংরক্ষণ করা যায়নি: ' + fbErr(ex); }
+  finally{ btn.disabled = false; }
+});
+$('setResetBtn').addEventListener('click', async () => {
+  if(!confirm('সব সেটিংস ডিফল্টে ফিরিয়ে নিতে চান?')) return;
+  try{
+    await setDoc(doc(db, 'settings', 'app'), DEFAULT_SETTINGS);
+    settings = Object.assign({}, DEFAULT_SETTINGS);
+    applySettings(); fillSettingsForm();
+    showToast('ডিফল্ট সেটিংস ফিরে এসেছে।');
+  }catch(ex){ console.error(ex); $('setMsg').textContent = 'সংরক্ষণ করা যায়নি: ' + fbErr(ex); }
 });
 
 /* ================= INIT ================= */
